@@ -35,7 +35,6 @@ pub fn discover() -> Result<Printers, String> {
     Ok(Printers { names, default })
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PrinterDetails {
     pub status: String,
