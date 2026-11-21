@@ -105,12 +105,15 @@ pub fn export_poster(
     source: &Path,
     destination: &Path,
     page: usize,
-    tiles: usize,
+    columns: usize,
+    rows: usize,
     overlap_mm: f32,
     crop_marks: bool,
 ) -> Result<(), String> {
     if source == destination
-        || ![2, 3, 4].contains(&tiles)
+        || !(1..=4).contains(&columns)
+        || !(1..=4).contains(&rows)
+        || columns * rows < 2
         || page == 0
         || !overlap_mm.is_finite()
         || !(0.0..=20.0).contains(&overlap_mm)
@@ -122,8 +125,8 @@ pub fn export_poster(
     let overlap = overlap_mm * 72.0 / 25.4;
     let step_w = paper_w - overlap;
     let step_h = paper_h - overlap;
-    let poster_w = paper_w + (tiles - 1) as f32 * step_w;
-    let poster_h = paper_h + (tiles - 1) as f32 * step_h;
+    let poster_w = paper_w + (columns - 1) as f32 * step_w;
+    let poster_h = paper_h + (rows - 1) as f32 * step_h;
     let (width, height, pixels) = rasterize(source, page)?;
     let mut pdf = Document::with_version("1.5");
     let pages_id = pdf.new_object_id();
@@ -142,16 +145,16 @@ pub fn export_poster(
         "XObject" => dictionary! { "PosterImage" => image_id },
     });
     let mut page_ids = Vec::new();
-    for row in 0..tiles {
-        for col in 0..tiles {
+    for row in 0..rows {
+        for col in 0..columns {
             let x = -(col as f32 * step_w);
-            let y = -((tiles - 1 - row) as f32 * step_h);
+            let y = -((rows - 1 - row) as f32 * step_h);
             let mut commands = format!(
                 "q 0 0 {paper_w:.3} {paper_h:.3} re W n {poster_w:.3} 0 0 {poster_h:.3} {x:.3} {y:.3} cm /PosterImage Do Q\n"
             );
             if crop_marks && overlap > 0.0 {
                 commands.push_str(&poster_crop_marks(
-                    row, col, tiles, overlap, paper_w, paper_h,
+                    row, col, columns, rows, overlap, paper_w, paper_h,
                 ));
             }
             let content_id = pdf.add_object(Stream::new(dictionary! {}, commands.into_bytes()));
@@ -184,17 +187,18 @@ pub fn export_poster(
 fn poster_crop_marks(
     row: usize,
     col: usize,
-    tiles: usize,
+    columns: usize,
+    rows: usize,
     overlap: f32,
     paper_w: f32,
     paper_h: f32,
 ) -> String {
     let mut marks = String::from("q 0 G 0.5 w [3 3] 0 d\n");
-    if col + 1 < tiles {
+    if col + 1 < columns {
         let x = paper_w - overlap;
         marks.push_str(&format!("{x:.3} 0 m {x:.3} {paper_h:.3} l S\n"));
     }
-    if row + 1 < tiles {
+    if row + 1 < rows {
         let y = overlap;
         marks.push_str(&format!("0 {y:.3} m {paper_w:.3} {y:.3} l S\n"));
     }
@@ -254,10 +258,10 @@ mod tests {
     use super::*;
     #[test]
     fn poster_cutting_guides_follow_tile_boundaries() {
-        let inner = poster_crop_marks(0, 0, 2, 12.0, 595.0, 842.0);
+        let inner = poster_crop_marks(0, 0, 2, 2, 12.0, 595.0, 842.0);
         assert!(inner.contains("583.000 0 m"));
         assert!(inner.contains("0 12.000 m"));
-        let last = poster_crop_marks(1, 1, 2, 12.0, 595.0, 842.0);
+        let last = poster_crop_marks(1, 1, 2, 2, 12.0, 595.0, 842.0);
         assert!(!last.contains(" l S"));
     }
 
