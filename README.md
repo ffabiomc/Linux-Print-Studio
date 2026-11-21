@@ -83,3 +83,7 @@ The manual-duplex panel lets you name a printer profile and save its back-side p
 ## Paper refeed orientation presets
 
 The manual duplex panel now records one of four physical refeed positions (printed face up/down and top/bottom edge first), or **Not calibrated**. Select the position only after a physical test; it is stored with the named printer profile and restored on selection. Older profiles without this field load as **Not calibrated**. This setting provides a reminder only: it does not yet modify PDF rotation, printer trays, or CUPS print jobs. The feed orientation of a stack and the back-side page order are independent settings, and both must be tested before relying on multi-sheet duplex.
+
+## CUPS printer discovery (read-only, experimental)
+
+Click **Find CUPS printers** in the printer panel to query local CUPS printer destinations using `lpstat -e`. The application also attempts `lpstat -d` to identify the system default printer. Select a destination in the drop-down. This requires the `lpstat` client utility and an accessible CUPS configuration/service; on Debian/Ubuntu it is commonly provided by `cups-client`. Discovery is triggered by the user and may briefly block the UI while the command runs. No jobs are submitted, printer settings are changed, or documents are sent. The Print button remains disabled. Printer status and capabilities are not yet queried.
