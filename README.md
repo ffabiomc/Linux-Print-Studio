@@ -45,3 +45,7 @@ The desktop app now supports opening PDFs using a native file picker or drag-and
 **Linux runtime requirement:** install Poppler's `pdftoppm` command (for example `sudo apt install poppler-utils` on Debian/Ubuntu). The preview invokes this executable and displays its PNG output. This is an interim implementation, not a bundled PDF renderer.
 
 Printing, PDF layout transformations, and CUPS virtual printer integration are **not implemented**. Selecting a layout currently changes only the selection control. Preview rendering runs synchronously and may temporarily block the interface for large PDFs; a background worker and input resource limits are planned before production use.
+
+## Imposition planning (0.3.0 development)
+
+The `src/imposition.rs` module calculates booklet page order and N-up sheet-side slots (1, 2, 4, 6, 9 or 16 pages per side). The UI shows a limited textual plan. This is **planning only**: it does not yet generate imposed PDFs, rotate duplex backs, handle poster tiling, or print. Output must not be treated as print-ready. Unit tests cover common page counts and blank padding.
