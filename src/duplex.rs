@@ -28,6 +28,16 @@ pub fn plan_manual_duplex(
     Ok(DuplexPlan { fronts, backs })
 }
 
+/// Number of physical sheets required for an imposed sequence of sides.
+pub fn physical_sheet_count(side_count: usize) -> usize {
+    side_count / 2 + side_count % 2
+}
+
+/// Whether the final physical sheet has no printed back side.
+pub fn final_back_is_blank(side_count: usize) -> bool {
+    side_count % 2 != 0
+}
+
 pub fn page_range(pages: &[usize]) -> String {
     pages
         .iter()
@@ -63,6 +73,15 @@ mod tests {
     #[test]
     fn reject_empty() {
         assert!(plan_manual_duplex(0, FeedOrder::Same).is_err());
+    }
+
+    #[test]
+    fn physical_sheet_counts_and_blank_backs() {
+        assert_eq!(physical_sheet_count(1), 1);
+        assert_eq!(physical_sheet_count(5), 3);
+        assert_eq!(physical_sheet_count(8), 4);
+        assert!(final_back_is_blank(5));
+        assert!(!final_back_is_blank(8));
     }
 
     #[test]
