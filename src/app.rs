@@ -28,6 +28,7 @@ pub struct PrintStudioApp {
     pages_per_sheet: usize,
     poster_tiles: usize,
     poster_overlap_mm: f32,
+    poster_crop_marks: bool,
     back_feed: FeedOrder,
     refeed: Refeed,
     profiles: Vec<PrinterProfile>,
@@ -57,6 +58,7 @@ impl Default for PrintStudioApp {
             pages_per_sheet: 4,
             poster_tiles: 2,
             poster_overlap_mm: 4.0,
+            poster_crop_marks: false,
             back_feed: FeedOrder::Reversed,
             refeed: Refeed::Unknown,
             profiles: profiles::config_path()
@@ -127,6 +129,7 @@ impl PrintStudioApp {
                     self.page,
                     self.poster_tiles,
                     self.poster_overlap_mm,
+                    self.poster_crop_marks,
                 )?;
                 Some(file)
             }
@@ -251,6 +254,10 @@ impl eframe::App for PrintStudioApp {
                             .speed(0.5)
                             .suffix(" mm"),
                     );
+                    ui.checkbox(
+                        &mut self.poster_crop_marks,
+                        self.language.text("poster_crop_marks"),
+                    );
                     ui.label(format!(
                         "{}: {}",
                         self.language.text("poster_sheets"),
@@ -362,6 +369,7 @@ impl eframe::App for PrintStudioApp {
                                         self.page,
                                         self.poster_tiles,
                                         self.poster_overlap_mm,
+                                        self.poster_crop_marks,
                                     ) {
                                         Ok(()) => format!("PDF saved: {}", path.display()),
                                         Err(error) => format!("Poster export failed: {error}"),
