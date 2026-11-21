@@ -157,6 +157,63 @@ pub fn submit(
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PrintJob {
+    pub id: String,
+    pub description: String,
+}
+
+pub fn parse_jobs(output: &str, printer: &str) -> Vec<PrintJob> {
+    let prefix = format!("{printer}-");
+    output
+        .lines()
+        .filter_map(|line| {
+            let id = line.split_whitespace().next()?;
+            let number = id.strip_prefix(&prefix)?;
+            if number.is_empty() || !number.bytes().all(|byte| byte.is_ascii_digit()) {
+                return None;
+            }
+            Some(PrintJob {
+                id: id.to_owned(),
+                description: line.to_owned(),
+            })
+        })
+        .collect()
+}
+
+pub fn jobs(printer: &str) -> Result<Vec<PrintJob>, String> {
+    if printer.is_empty() || printer.starts_with('-') || printer.chars().any(char::is_control) {
+        return Err("Invalid printer name".to_owned());
+    }
+    let output = run_lpstat(&["-o", printer])?;
+    Ok(parse_jobs(&output, printer))
+}
+
+pub fn cancel_job(printer: &str, job_id: &str) -> Result<(), String> {
+    let prefix = format!("{printer}-");
+    let number = job_id.strip_prefix(&prefix).ok_or("Invalid job ID")?;
+    if printer.is_empty()
+        || printer.starts_with('-')
+        || printer.chars().any(char::is_control)
+        || number.is_empty()
+        || !number.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Err("Invalid job ID".to_owned());
+    }
+    let output = Command::new("cancel")
+        .arg(job_id)
+        .output()
+        .map_err(|error| format!("Cannot run cancel: {error}"))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "CUPS cancellation failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ))
+    }
+}
+
 fn parse_names(output: &str) -> Vec<String> {
     let mut names = Vec::new();
     for name in output.lines().map(str::trim) {
@@ -191,6 +248,22 @@ mod tests {
     #[test]
     fn ignores_malformed_choices() {
         assert!(parse_options("not a valid option").is_empty());
+    }
+
+    #[test]
+    fn parses_queue_for_selected_printer() {
+        let jobs = parse_jobs(
+            "Office-12 user 1024 Sat\\nOther-4 user 2048 Sat\\nOffice-13 user 512 Sat\\n",
+            "Office",
+        );
+        assert_eq!(jobs.len(), 2);
+        assert_eq!(jobs[0].id, "Office-12");
+        assert_eq!(jobs[1].id, "Office-13");
+    }
+
+    #[test]
+    fn ignores_invalid_job_identifiers() {
+        assert!(parse_jobs("Office-abc user\\nOffice-12x user\\n", "Office").is_empty());
     }
 
     #[test]
