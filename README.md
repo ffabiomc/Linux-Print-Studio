@@ -101,3 +101,7 @@ After **Check printer status and capabilities**, expand **Available printer sett
 With a PDF loaded, a discovered printer selected, and **Normal** layout active, click **Print** to review the document path, printer, copies, and selected CUPS options. Nothing is sent until you click **Confirm printing**. Submission uses the local `lp` utility and reports its output or error. Install the CUPS client tools (`lp`, `lpstat`, and `lpoptions`) and ensure the printer is configured and reachable.
 
 **Important:** this sends the **original PDF** only; booklet, poster, and N-up layouts are not yet connected to direct printing. The command runs synchronously and may briefly block the interface. A successful `lp` response means the job was accepted by the spooler, **not** that physical printing completed. Test with a small document first.
+
+## Print queue management (experimental)
+
+Select a CUPS printer and click **Refresh queue** to list pending jobs reported by `lpstat -o PRINTER`. Each job has a **Cancel job** action with a second confirmation dialog. Cancellation uses `cancel JOB-ID`, with job IDs validated against the selected printer's queue prefix. CUPS permissions still apply: the system may refuse to cancel jobs belonging to other users. Queue data is a manual snapshot; refresh to see current state. The command output is shown as provided by CUPS and is not a detailed progress indicator. The app does not automatically cancel or alter any jobs.
