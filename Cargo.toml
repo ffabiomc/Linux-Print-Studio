@@ -1,6 +1,6 @@
 [package]
 name = "linux-print-studio"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Open-source print management desktop app for Linux"
 repository = "https://github.com/ffabiomc/Linux-Print-Studio"
@@ -8,3 +8,5 @@ repository = "https://github.com/ffabiomc/Linux-Print-Studio"
 [dependencies]
 eframe = "0.31"
 lopdf = "0.34"
+rfd = "0.15"
+image = { version = "0.25", default-features = false, features = ["png"] }
