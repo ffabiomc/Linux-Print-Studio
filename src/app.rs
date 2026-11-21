@@ -1,5 +1,6 @@
 use crate::document::PdfDocument;
 use crate::i18n::Language;
+use crate::imposition;
 use crate::preview;
 use eframe::egui;
 
@@ -18,6 +19,7 @@ pub struct PrintStudioApp {
     page: usize,
     layout: Layout,
     copies: u32,
+    pages_per_sheet: usize,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -32,6 +34,7 @@ impl Default for PrintStudioApp {
             page: 1,
             layout: Layout::Normal,
             copies: 1,
+            pages_per_sheet: 4,
             status: None,
             preview: None,
             preview_page: 0,
@@ -140,6 +143,45 @@ impl eframe::App for PrintStudioApp {
                     (Layout::Multiple, "multiple"),
                 ] {
                     ui.radio_value(&mut self.layout, layout, self.language.text(key));
+                }
+                if self.layout == Layout::Multiple {
+                    egui::ComboBox::from_id_salt("pages_per_sheet")
+                        .selected_text(format!("{} / sheet", self.pages_per_sheet))
+                        .show_ui(ui, |ui| {
+                            for count in [1, 2, 4, 6, 9, 16] {
+                                ui.selectable_value(
+                                    &mut self.pages_per_sheet,
+                                    count,
+                                    count.to_string(),
+                                );
+                            }
+                        });
+                }
+                if let Some(document) = &self.document {
+                    let plan = match self.layout {
+                        Layout::Booklet => imposition::booklet(document.pages),
+                        Layout::Multiple => imposition::n_up(document.pages, self.pages_per_sheet),
+                        _ => Ok(Vec::new()),
+                    };
+                    if let Ok(sides) = plan {
+                        if !sides.is_empty() {
+                            ui.label(format!("Planned sheet sides: {}", sides.len()));
+                            egui::ScrollArea::vertical()
+                                .max_height(110.0)
+                                .show(ui, |ui| {
+                                    for (index, side) in sides.iter().take(20).enumerate() {
+                                        let pages = side
+                                            .slots
+                                            .iter()
+                                            .map(|page| page.map_or("-".to_owned(), |n| n.to_string()))
+                                            .collect::<Vec<_>>()
+                                            .join(" | ");
+                                        ui.label(format!("{}: {}", index + 1, pages));
+                                    }
+                                });
+                            ui.small("Page order only — PDF export not yet implemented.");
+                        }
+                    }
                 }
                 ui.separator();
                 ui.label(self.language.text("copies"));
