@@ -556,15 +556,19 @@ impl eframe::App for PrintStudioApp {
                         if ui.button(self.language.text("cancel")).clicked() {
                             self.cancel_target = None;
                         }
-                        if ui.button(self.language.text("confirm_cancel_job")).clicked() {
+                        if ui
+                            .button(self.language.text("confirm_cancel_job"))
+                            .clicked()
+                        {
                             self.cancel_target = None;
-                            self.status = Some(match cups::cancel_job(&self.selected_printer, &job_id) {
-                                Ok(()) => {
-                                    self.queue_jobs.retain(|job| job.id != job_id);
-                                    self.language.text("job_cancelled").to_owned()
-                                }
-                                Err(error) => error,
-                            });
+                            self.status =
+                                Some(match cups::cancel_job(&self.selected_printer, &job_id) {
+                                    Ok(()) => {
+                                        self.queue_jobs.retain(|job| job.id != job_id);
+                                        self.language.text("job_cancelled").to_owned()
+                                    }
+                                    Err(error) => error,
+                                });
                         }
                     });
                 });
