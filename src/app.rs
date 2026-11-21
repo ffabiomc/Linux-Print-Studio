@@ -6,6 +6,7 @@ use crate::export::{self, ExportLayout};
 use crate::i18n::Language;
 use crate::imposition;
 use crate::preview;
+use crate::profiles::{self, PrinterProfile};
 use eframe::egui;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,6 +26,8 @@ pub struct PrintStudioApp {
     copies: u32,
     pages_per_sheet: usize,
     back_feed: FeedOrder,
+    profiles: Vec<PrinterProfile>,
+    profile_name: String,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -41,6 +44,10 @@ impl Default for PrintStudioApp {
             copies: 1,
             pages_per_sheet: 4,
             back_feed: FeedOrder::Reversed,
+            profiles: profiles::config_path()
+                .and_then(|path| profiles::load(&path))
+                .unwrap_or_default(),
+            profile_name: String::new(),
             status: None,
             preview: None,
             preview_page: 0,
@@ -235,6 +242,38 @@ impl eframe::App for PrintStudioApp {
                     if let Some(sides) = sides {
                         ui.separator();
                         ui.heading(self.language.text("manual_duplex"));
+                        ui.label(self.language.text("profile_name"));
+                        ui.text_edit_singleline(&mut self.profile_name);
+                        if ui.button(self.language.text("save_profile")).clicked() {
+                            let name = self.profile_name.trim().to_owned();
+                            let mut updated = self.profiles.clone();
+                            if let Some(profile) = updated.iter_mut().find(|profile| profile.name == name) {
+                                profile.back_feed = self.back_feed;
+                            } else {
+                                updated.push(PrinterProfile {
+                                    name,
+                                    back_feed: self.back_feed,
+                                });
+                            }
+                            self.status = Some(match profiles::config_path()
+                                .and_then(|path| profiles::save(&path, &updated)) {
+                                Ok(()) => {
+                                    self.profiles = updated;
+                                    self.language.text("profile_saved").to_owned()
+                                }
+                                Err(error) => format!("Profile save failed: {error}"),
+                            });
+                        }
+                        egui::ComboBox::from_id_salt("printer_profile")
+                            .selected_text(self.language.text("load_profile"))
+                            .show_ui(ui, |ui| {
+                                for profile in &self.profiles {
+                                    if ui.selectable_label(false, &profile.name).clicked() {
+                                        self.profile_name = profile.name.clone();
+                                        self.back_feed = profile.back_feed;
+                                    }
+                                }
+                            });
                         if ui.button(self.language.text("calibration_pdf")).clicked() {
                             if let Some(path) = rfd::FileDialog::new()
                                 .add_filter("PDF", &["pdf"])
