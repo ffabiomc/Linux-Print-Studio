@@ -363,7 +363,9 @@ impl eframe::App for PrintStudioApp {
             self.page,
         );
         egui::SidePanel::left("settings")
-            .min_width(245.0)
+            .resizable(true)
+            .default_width(310.0)
+            .width_range(245.0..=520.0)
             .show(ctx, |ui| {
                 ui.heading(self.language.text("document"));
                 if ui.button(self.language.text("open")).clicked() {
@@ -1062,12 +1064,20 @@ impl eframe::App for PrintStudioApp {
             if let Some(document) = &self.document {
                 let pages = document.pages;
                 ui.horizontal(|ui| {
-                    if ui.button("◀").clicked() && self.page > 1 {
+                    if ui
+                        .add_enabled(self.page > 1, egui::Button::new("◀"))
+                        .on_hover_text(self.language.text("previous_page"))
+                        .clicked()
+                    {
                         self.page -= 1;
                         self.poster_tile_preview = None;
                     }
                     ui.label(format!("{} / {}", self.page, pages));
-                    if ui.button("▶").clicked() && self.page < pages {
+                    if ui
+                        .add_enabled(self.page < pages, egui::Button::new("▶"))
+                        .on_hover_text(self.language.text("next_page"))
+                        .clicked()
+                    {
                         self.page += 1;
                         self.poster_tile_preview = None;
                     }
