@@ -106,12 +106,14 @@ pub fn export_poster(
     destination: &Path,
     page: usize,
     tiles: usize,
+    overlap_mm: f32,
 ) -> Result<(), String> {
-    if source == destination || ![2, 3, 4].contains(&tiles) || page == 0 {
+    if source == destination || ![2, 3, 4].contains(&tiles) || page == 0 || !overlap_mm.is_finite() || !(0.0..=20.0).contains(&overlap_mm) {
         return Err("Invalid poster settings".to_owned());
     }
-    // A4 output, 12 pt overlap between neighboring tiles.
-    let (paper_w, paper_h, overlap) = (595.0_f32, 842.0_f32, 12.0_f32);
+    // A4 output; PDF coordinates are in points (72 points per inch).
+    let (paper_w, paper_h) = (595.0_f32, 842.0_f32);
+    let overlap = overlap_mm * 72.0 / 25.4;
     let step_w = paper_w - overlap;
     let step_h = paper_h - overlap;
     let poster_w = paper_w + (tiles - 1) as f32 * step_w;
