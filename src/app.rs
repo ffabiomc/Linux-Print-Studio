@@ -241,14 +241,13 @@ impl eframe::App for PrintStudioApp {
                                 .set_file_name("duplex-calibration.pdf")
                                 .save_file()
                             {
-                                self.status = Some(
-                                    match calibration::create_calibration_pdf(&path) {
+                                self.status =
+                                    Some(match calibration::create_calibration_pdf(&path) {
                                         Ok(()) => {
                                             self.language.text("calibration_saved").to_owned()
                                         }
                                         Err(error) => format!("Calibration PDF failed: {error}"),
-                                    },
-                                );
+                                    });
                             }
                         }
                         ui.small(self.language.text("calibration_instructions"));
