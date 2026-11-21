@@ -1,4 +1,5 @@
 use crate::document::PdfDocument;
+use crate::export::{self, ExportLayout};
 use crate::i18n::Language;
 use crate::imposition;
 use crate::preview;
@@ -181,7 +182,38 @@ impl eframe::App for PrintStudioApp {
                                         ui.label(format!("{}: {}", index + 1, pages));
                                     }
                                 });
-                            ui.small("Page order only — PDF export not yet implemented.");
+                            ui.small("Experimental raster PDF export available below.");
+                        }
+                    }
+                }
+                ui.separator();
+                let export_layout = match self.layout {
+                    Layout::Booklet => Some(ExportLayout::Booklet),
+                    Layout::Multiple => Some(ExportLayout::Multiple(self.pages_per_sheet)),
+                    _ => None,
+                };
+                if ui
+                    .add_enabled(
+                        self.document.is_some() && export_layout.is_some(),
+                        egui::Button::new(self.language.text("export_pdf")),
+                    )
+                    .clicked()
+                {
+                    if let (Some(document), Some(layout)) = (&self.document, export_layout) {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("PDF", &["pdf"])
+                            .set_file_name("print-ready.pdf")
+                            .save_file()
+                        {
+                            self.status = Some(match export::export_pdf(
+                                &document.path,
+                                &path,
+                                document.pages,
+                                layout,
+                            ) {
+                                Ok(()) => format!("PDF saved: {}", path.display()),
+                                Err(error) => format!("PDF export failed: {error}"),
+                            });
                         }
                     }
                 }
