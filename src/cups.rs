@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn parses_driver_choices() {
-        let parsed = parse_options("PageSize/Media Size: *A4 Letter Legal\\n");
+        let parsed = parse_options("PageSize/Media Size: *A4 Letter Legal\n");
         assert_eq!(parsed.len(), 1);
         assert_eq!(parsed[0].key, "PageSize");
         assert_eq!(parsed[0].default.as_deref(), Some("A4"));
