@@ -62,11 +62,8 @@ impl PrintStudioApp {
         if let Some(document) = &self.document {
             match preview::render_page(&document.path, self.page) {
                 Ok(image) => {
-                    self.preview = Some(ctx.load_texture(
-                        "pdf-page",
-                        image,
-                        egui::TextureOptions::LINEAR,
-                    ));
+                    self.preview =
+                        Some(ctx.load_texture("pdf-page", image, egui::TextureOptions::LINEAR));
                     self.status = None;
                 }
                 Err(error) => self.status = Some(error),
