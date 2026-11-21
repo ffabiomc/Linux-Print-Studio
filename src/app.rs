@@ -630,9 +630,7 @@ impl eframe::App for PrintStudioApp {
                     });
                 }
                 ui.label(self.language.text("not_ready"));
-                let can_print = self.document.is_some()
-                    && !self.selected_printer.is_empty()
-;
+                let can_print = self.document.is_some() && !self.selected_printer.is_empty();
                 if ui
                     .add_enabled(can_print, egui::Button::new(self.language.text("print")))
                     .clicked()
