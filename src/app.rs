@@ -1,4 +1,5 @@
 use crate::document::PdfDocument;
+use crate::duplex::{self, FeedOrder};
 use crate::export::{self, ExportLayout};
 use crate::i18n::Language;
 use crate::imposition;
@@ -21,6 +22,7 @@ pub struct PrintStudioApp {
     layout: Layout,
     copies: u32,
     pages_per_sheet: usize,
+    back_feed: FeedOrder,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -36,6 +38,7 @@ impl Default for PrintStudioApp {
             layout: Layout::Normal,
             copies: 1,
             pages_per_sheet: 4,
+            back_feed: FeedOrder::Reversed,
             status: None,
             preview: None,
             preview_page: 0,
@@ -216,6 +219,42 @@ impl eframe::App for PrintStudioApp {
                                     Err(error) => format!("PDF export failed: {error}"),
                                 },
                             );
+                        }
+                    }
+                }
+                if let Some(document) = &self.document {
+                    let sides = match self.layout {
+                        Layout::Booklet => imposition::booklet(document.pages).ok(),
+                        Layout::Multiple => {
+                            imposition::n_up(document.pages, self.pages_per_sheet).ok()
+                        }
+                        _ => None,
+                    };
+                    if let Some(sides) = sides {
+                        ui.separator();
+                        ui.heading(self.language.text("manual_duplex"));
+                        ui.radio_value(
+                            &mut self.back_feed,
+                            FeedOrder::Reversed,
+                            self.language.text("reverse_backs"),
+                        );
+                        ui.radio_value(
+                            &mut self.back_feed,
+                            FeedOrder::Same,
+                            self.language.text("same_backs"),
+                        );
+                        if let Ok(plan) = duplex::plan_manual_duplex(sides.len(), self.back_feed) {
+                            ui.label(format!(
+                                "{}: {}",
+                                self.language.text("front_pass"),
+                                duplex::page_range(&plan.fronts)
+                            ));
+                            ui.label(format!(
+                                "{}: {}",
+                                self.language.text("back_pass"),
+                                duplex::page_range(&plan.backs)
+                            ));
+                            ui.small(self.language.text("duplex_warning"));
                         }
                     }
                 }
