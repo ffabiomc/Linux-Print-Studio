@@ -1,4 +1,5 @@
 mod app;
+mod document;
 mod i18n;
 
 fn main() -> eframe::Result<()> {
