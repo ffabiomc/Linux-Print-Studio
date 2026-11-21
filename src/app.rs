@@ -465,11 +465,13 @@ impl eframe::App for PrintStudioApp {
                 if let Some(details) = &self.printer_details {
                     ui.label(&details.status);
                     ui.collapsing(self.language.text("printer_options"), |ui| {
-                        egui::ScrollArea::vertical().max_height(170.0).show(ui, |ui| {
-                            for option in &details.options {
-                                ui.small(option);
-                            }
-                        });
+                        egui::ScrollArea::vertical()
+                            .max_height(170.0)
+                            .show(ui, |ui| {
+                                for option in &details.options {
+                                    ui.small(option);
+                                }
+                            });
                     });
                 }
                 ui.label(self.language.text("not_ready"));
