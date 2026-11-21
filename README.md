@@ -105,3 +105,7 @@ With a PDF loaded, a discovered printer selected, and **Normal** layout active, 
 ## Print queue management (experimental)
 
 Select a CUPS printer and click **Refresh queue** to list pending jobs reported by `lpstat -o PRINTER`. Each job has a **Cancel job** action with a second confirmation dialog. Cancellation uses `cancel JOB-ID`, with job IDs validated against the selected printer's queue prefix. CUPS permissions still apply: the system may refuse to cancel jobs belonging to other users. Queue data is a manual snapshot; refresh to see current state. The command output is shown as provided by CUPS and is not a detailed progress indicator. The app does not automatically cancel or alter any jobs.
+
+## Direct booklet and N-up printing (experimental)
+
+The confirmed CUPS print action now supports **Normal**, **Booklet**, and **Multiple pages per sheet**. Booklet and N-up first generate a rasterized PDF using the existing exporter into a temporary file, then submit it to `lp`. The temporary file is removed when the submission attempt finishes. Poppler's `pdftoppm` is required. **Poster** is not supported for direct printing. The booklet's front/back ordering does not automatically configure duplex: choose compatible printer duplex settings and test with a short document. For manual duplex, use the separate front/back export workflow instead. PDF rasterization may lose selectable text and increase processing time. A successful CUPS submission is not proof that the physical job printed.
