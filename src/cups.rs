@@ -35,6 +35,40 @@ pub fn discover() -> Result<Printers, String> {
     Ok(Printers { names, default })
 }
 
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PrinterDetails {
+    pub status: String,
+    pub options: Vec<String>,
+}
+
+pub fn details(printer: &str) -> Result<PrinterDetails, String> {
+    if printer.is_empty() || printer.starts_with('-') || printer.chars().any(char::is_control) {
+        return Err("Invalid printer name".to_owned());
+    }
+    let status = run_lpstat(&["-p", printer])?;
+    let output = Command::new("lpoptions")
+        .args(["-p", printer, "-l"])
+        .output()
+        .map_err(|error| format!("Cannot run lpoptions: {error}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "lpoptions failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    let options = String::from_utf8(output.stdout)
+        .map_err(|error| error.to_string())?
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(str::to_owned)
+        .collect();
+    Ok(PrinterDetails {
+        status: status.trim().to_owned(),
+        options,
+    })
+}
+
 fn parse_names(output: &str) -> Vec<String> {
     let mut names = Vec::new();
     for name in output.lines().map(str::trim) {
