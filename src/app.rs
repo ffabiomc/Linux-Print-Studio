@@ -27,6 +27,7 @@ pub struct PrintStudioApp {
     copies: u32,
     pages_per_sheet: usize,
     poster_tiles: usize,
+    poster_overlap_mm: f32,
     back_feed: FeedOrder,
     refeed: Refeed,
     profiles: Vec<PrinterProfile>,
@@ -55,6 +56,7 @@ impl Default for PrintStudioApp {
             copies: 1,
             pages_per_sheet: 4,
             poster_tiles: 2,
+            poster_overlap_mm: 4.0,
             back_feed: FeedOrder::Reversed,
             refeed: Refeed::Unknown,
             profiles: profiles::config_path()
@@ -119,7 +121,13 @@ impl PrintStudioApp {
                     .suffix(".pdf")
                     .tempfile()
                     .map_err(|error| error.to_string())?;
-                export::export_poster(&document.path, file.path(), self.page, self.poster_tiles)?;
+                export::export_poster(
+                    &document.path,
+                    file.path(),
+                    self.page,
+                    self.poster_tiles,
+                    self.poster_overlap_mm,
+                )?;
                 Some(file)
             }
         };
@@ -236,6 +244,26 @@ impl eframe::App for PrintStudioApp {
                                 );
                             }
                         });
+                    ui.label(self.language.text("poster_overlap"));
+                    ui.add(
+                        egui::DragValue::new(&mut self.poster_overlap_mm)
+                            .range(0.0..=20.0)
+                            .speed(0.5)
+                            .suffix(" mm"),
+                    );
+                    ui.label(format!(
+                        "{}: {}",
+                        self.language.text("poster_sheets"),
+                        self.poster_tiles * self.poster_tiles
+                    ));
+                    egui::Grid::new("poster_tile_preview").show(ui, |ui| {
+                        for row in 0..self.poster_tiles {
+                            for col in 0..self.poster_tiles {
+                                ui.label(format!("[{}]", row * self.poster_tiles + col + 1));
+                            }
+                            ui.end_row();
+                        }
+                    });
                     ui.small(self.language.text("poster_note"));
                 }
                 if self.layout == Layout::Multiple {
@@ -333,6 +361,7 @@ impl eframe::App for PrintStudioApp {
                                         &path,
                                         self.page,
                                         self.poster_tiles,
+                                        self.poster_overlap_mm,
                                     ) {
                                         Ok(()) => format!("PDF saved: {}", path.display()),
                                         Err(error) => format!("Poster export failed: {error}"),
