@@ -73,6 +73,8 @@ impl Language {
             (false, "confirm_print") => "Confirm printing",
             (true, "cancel") => "Cancelar",
             (false, "cancel") => "Cancel",
+            (true, "poster_crop_marks") => "Guias tracejadas para corte",
+            (false, "poster_crop_marks") => "Dashed cutting guides",
             (true, "poster_overlap") => "Sobreposição entre folhas",
             (false, "poster_overlap") => "Overlap between sheets",
             (true, "poster_sheets") => "Total de folhas",
