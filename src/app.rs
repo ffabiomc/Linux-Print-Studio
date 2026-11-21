@@ -243,7 +243,11 @@ impl eframe::App for PrintStudioApp {
                         .selected_text(self.poster_columns.to_string())
                         .show_ui(ui, |ui| {
                             for count in 1..=4 {
-                                ui.selectable_value(&mut self.poster_columns, count, count.to_string());
+                                ui.selectable_value(
+                                    &mut self.poster_columns,
+                                    count,
+                                    count.to_string(),
+                                );
                             }
                         });
                     ui.label(self.language.text("poster_rows"));
@@ -251,7 +255,11 @@ impl eframe::App for PrintStudioApp {
                         .selected_text(self.poster_rows.to_string())
                         .show_ui(ui, |ui| {
                             for count in 1..=4 {
-                                ui.selectable_value(&mut self.poster_rows, count, count.to_string());
+                                ui.selectable_value(
+                                    &mut self.poster_rows,
+                                    count,
+                                    count.to_string(),
+                                );
                             }
                         });
                     ui.label(self.language.text("poster_overlap"));
