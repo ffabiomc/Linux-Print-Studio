@@ -1,6 +1,7 @@
 mod app;
 mod document;
 mod i18n;
+mod imposition;
 mod preview;
 
 fn main() -> eframe::Result<()> {
