@@ -269,7 +269,7 @@ impl eframe::App for PrintStudioApp {
                                         let stem = base.with_extension("");
                                         let front = stem.with_file_name(format!(
                                             "{}-fronts.pdf",
-                                            stem.file_name().unwrap_or_default().to_string_lossy()
+                                            stem.file_name().and_then(|name| name.to_str()).unwrap_or("duplex")
                                         ));
                                         let back = stem.with_file_name(format!(
                                             "{}-backs.pdf",
