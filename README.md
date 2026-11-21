@@ -73,3 +73,9 @@ In the manual duplex section, choose **Split PDF into fronts and backs**, select
 The manual duplex panel now offers **Generate calibration PDF**. It creates a two-page A4 vector PDF with a border, center lines, TOP/BOTTOM labels, and FRONT/BACK page identifiers. Print only page 1, observe how the sheet exits, reinsert the same sheet, and print page 2. Inspect whether the second page lands on the opposite side and whether it is upright. Use a single test sheet to avoid wasting paper.
 
 This tool **does not** detect the printer, infer the correct refeed orientation, save printer profiles, automatically print, or calibrate stack order. Those require a guided user-confirmation workflow and real-device testing. The file will not overwrite an existing output. CI checks compilation and a two-page PDF creation unit test, not physical printer behavior.
+
+## Saved manual-duplex profiles (experimental)
+
+The manual-duplex panel lets you name a printer profile and save its back-side page order (same or reversed). Saved profiles can be selected again later. Data is stored locally at `$XDG_CONFIG_HOME/linux-print-studio/printer-profiles.txt` or `~/.config/linux-print-studio/printer-profiles.txt` if XDG_CONFIG_HOME is not set. No account or network service is required. Saving a profile with the same name updates its page order.
+
+**Limitations:** these are user-named presets, not discovered CUPS printers. They store only back-side page order; they do not yet record paper orientation, rotation, face-up/face-down output, tray, or automatic printing. Always verify paper handling on the physical printer. The format is an internal tab-delimited text file; do not edit it while the application is running.
