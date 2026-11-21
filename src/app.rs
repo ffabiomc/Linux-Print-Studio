@@ -6,7 +6,7 @@ use crate::export::{self, ExportLayout};
 use crate::i18n::Language;
 use crate::imposition;
 use crate::preview;
-use crate::profiles::{self, PrinterProfile};
+use crate::profiles::{self, PrinterProfile, Refeed};
 use eframe::egui;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,6 +26,7 @@ pub struct PrintStudioApp {
     copies: u32,
     pages_per_sheet: usize,
     back_feed: FeedOrder,
+    refeed: Refeed,
     profiles: Vec<PrinterProfile>,
     profile_name: String,
     status: Option<String>,
@@ -44,6 +45,7 @@ impl Default for PrintStudioApp {
             copies: 1,
             pages_per_sheet: 4,
             back_feed: FeedOrder::Reversed,
+            refeed: Refeed::Unknown,
             profiles: profiles::config_path()
                 .and_then(|path| profiles::load(&path))
                 .unwrap_or_default(),
@@ -242,6 +244,31 @@ impl eframe::App for PrintStudioApp {
                     if let Some(sides) = sides {
                         ui.separator();
                         ui.heading(self.language.text("manual_duplex"));
+                        ui.label(self.language.text("refeed_orientation"));
+                        egui::ComboBox::from_id_salt("refeed_orientation")
+                            .selected_text(match self.refeed {
+                                Refeed::Unknown => self.language.text("refeed_unknown"),
+                                Refeed::FaceUpTopFirst => self.language.text("up_top"),
+                                Refeed::FaceUpBottomFirst => self.language.text("up_bottom"),
+                                Refeed::FaceDownTopFirst => self.language.text("down_top"),
+                                Refeed::FaceDownBottomFirst => self.language.text("down_bottom"),
+                            })
+                            .show_ui(ui, |ui| {
+                                for (value, key) in [
+                                    (Refeed::Unknown, "refeed_unknown"),
+                                    (Refeed::FaceUpTopFirst, "up_top"),
+                                    (Refeed::FaceUpBottomFirst, "up_bottom"),
+                                    (Refeed::FaceDownTopFirst, "down_top"),
+                                    (Refeed::FaceDownBottomFirst, "down_bottom"),
+                                ] {
+                                    ui.selectable_value(
+                                        &mut self.refeed,
+                                        value,
+                                        self.language.text(key),
+                                    );
+                                }
+                            });
+                        ui.small(self.language.text("refeed_caution"));
                         ui.label(self.language.text("profile_name"));
                         ui.text_edit_singleline(&mut self.profile_name);
                         if ui.button(self.language.text("save_profile")).clicked() {
@@ -251,10 +278,12 @@ impl eframe::App for PrintStudioApp {
                                 updated.iter_mut().find(|profile| profile.name == name)
                             {
                                 profile.back_feed = self.back_feed;
+                                profile.refeed = self.refeed;
                             } else {
                                 updated.push(PrinterProfile {
                                     name,
                                     back_feed: self.back_feed,
+                                    refeed: self.refeed,
                                 });
                             }
                             self.status = Some(
@@ -276,6 +305,7 @@ impl eframe::App for PrintStudioApp {
                                     if ui.selectable_label(false, &profile.name).clicked() {
                                         self.profile_name = profile.name.clone();
                                         self.back_feed = profile.back_feed;
+                                        self.refeed = profile.refeed;
                                     }
                                 }
                             });
