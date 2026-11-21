@@ -1,5 +1,6 @@
 mod app;
 mod document;
+mod export;
 mod i18n;
 mod imposition;
 mod preview;
