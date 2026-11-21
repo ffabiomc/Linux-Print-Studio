@@ -8,8 +8,15 @@ pub enum Language {
 pub fn system_language() -> Language {
     for key in ["LC_ALL", "LC_MESSAGES", "LANG"] {
         if let Ok(value) = std::env::var(key) {
-            if value.is_empty() { continue; }
-            let code = value.split(['.', '@']).next().unwrap_or("").replace('_', "-").to_lowercase();
+            if value.is_empty() {
+                continue;
+            }
+            let code = value
+                .split(['.', '@'])
+                .next()
+                .unwrap_or("")
+                .replace('_', "-")
+                .to_lowercase();
             return if code == "pt" || code.starts_with("pt-") {
                 Language::PortugueseBrazil
             } else {
@@ -22,7 +29,11 @@ pub fn system_language() -> Language {
 
 impl Language {
     pub fn resolved(self) -> Self {
-        if self == Self::Auto { system_language() } else { self }
+        if self == Self::Auto {
+            system_language()
+        } else {
+            self
+        }
     }
 
     pub fn label(self) -> &'static str {
@@ -63,6 +74,9 @@ mod tests {
     #[test]
     fn explicit_languages_resolve() {
         assert_eq!(Language::English.resolved(), Language::English);
-        assert_eq!(Language::PortugueseBrazil.resolved(), Language::PortugueseBrazil);
+        assert_eq!(
+            Language::PortugueseBrazil.resolved(),
+            Language::PortugueseBrazil
+        );
     }
 }
