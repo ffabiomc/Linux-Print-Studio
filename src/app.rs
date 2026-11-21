@@ -532,11 +532,7 @@ impl eframe::App for PrintStudioApp {
                         self.language.text("printer"),
                         self.selected_printer
                     ));
-                    ui.label(format!(
-                        "{}: {}",
-                        self.language.text("copies"),
-                        self.copies
-                    ));
+                    ui.label(format!("{}: {}", self.language.text("copies"), self.copies));
                     for (key, value) in &self.selected_options {
                         ui.label(format!("{key}: {value}"));
                     }
