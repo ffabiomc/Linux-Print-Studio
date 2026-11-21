@@ -1,3 +1,4 @@
+use eframe::egui;
 use crate::i18n::Language;
 
 pub struct PrintStudioApp {
