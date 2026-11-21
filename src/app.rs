@@ -26,6 +26,7 @@ pub struct PrintStudioApp {
     layout: Layout,
     copies: u32,
     pages_per_sheet: usize,
+    poster_tiles: usize,
     back_feed: FeedOrder,
     refeed: Refeed,
     profiles: Vec<PrinterProfile>,
@@ -53,6 +54,7 @@ impl Default for PrintStudioApp {
             layout: Layout::Normal,
             copies: 1,
             pages_per_sheet: 4,
+            poster_tiles: 2,
             back_feed: FeedOrder::Reversed,
             refeed: Refeed::Unknown,
             profiles: profiles::config_path()
@@ -112,7 +114,18 @@ impl PrintStudioApp {
                 Some(file)
             }
             Layout::Poster => {
-                return Err("Poster printing is not implemented yet".to_owned());
+                let file = tempfile::Builder::new()
+                    .prefix("linux-print-studio-poster-")
+                    .suffix(".pdf")
+                    .tempfile()
+                    .map_err(|error| error.to_string())?;
+                export::export_poster(
+                    &document.path,
+                    file.path(),
+                    self.page,
+                    self.poster_tiles,
+                )?;
+                Some(file)
             }
         };
         let pdf = temporary
@@ -215,6 +228,21 @@ impl eframe::App for PrintStudioApp {
                 ] {
                     ui.radio_value(&mut self.layout, layout, self.language.text(key));
                 }
+                if self.layout == Layout::Poster {
+                    ui.label(self.language.text("poster_grid"));
+                    egui::ComboBox::from_id_salt("poster_tiles")
+                        .selected_text(format!("{} × {}", self.poster_tiles, self.poster_tiles))
+                        .show_ui(ui, |ui| {
+                            for count in [2, 3, 4] {
+                                ui.selectable_value(
+                                    &mut self.poster_tiles,
+                                    count,
+                                    format!("{count} × {count}"),
+                                );
+                            }
+                        });
+                    ui.small(self.language.text("poster_note"));
+                }
                 if self.layout == Layout::Multiple {
                     egui::ComboBox::from_id_salt("pages_per_sheet")
                         .selected_text(format!("{} / sheet", self.pages_per_sheet))
@@ -260,6 +288,7 @@ impl eframe::App for PrintStudioApp {
                 let export_layout = match self.layout {
                     Layout::Booklet => Some(ExportLayout::Booklet),
                     Layout::Multiple => Some(ExportLayout::Multiple(self.pages_per_sheet)),
+                    Layout::Poster => None,
                     _ => None,
                 };
                 if ui
@@ -286,6 +315,33 @@ impl eframe::App for PrintStudioApp {
                                     Err(error) => format!("PDF export failed: {error}"),
                                 },
                             );
+                        }
+                    }
+                }
+                if self.layout == Layout::Poster {
+                    if ui
+                        .add_enabled(
+                            self.document.is_some(),
+                            egui::Button::new(self.language.text("export_pdf")),
+                        )
+                        .clicked()
+                    {
+                        if let Some(document) = &self.document {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("PDF", &["pdf"])
+                                .set_file_name("poster.pdf")
+                                .save_file()
+                            {
+                                self.status = Some(match export::export_poster(
+                                    &document.path,
+                                    &path,
+                                    self.page,
+                                    self.poster_tiles,
+                                ) {
+                                    Ok(()) => format!("PDF saved: {}", path.display()),
+                                    Err(error) => format!("Poster export failed: {error}"),
+                                });
+                            }
                         }
                     }
                 }
@@ -576,7 +632,7 @@ impl eframe::App for PrintStudioApp {
                 ui.label(self.language.text("not_ready"));
                 let can_print = self.document.is_some()
                     && !self.selected_printer.is_empty()
-                    && self.layout != Layout::Poster;
+;
                 if ui
                     .add_enabled(can_print, egui::Button::new(self.language.text("print")))
                     .clicked()
