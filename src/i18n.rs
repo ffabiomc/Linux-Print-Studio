@@ -57,6 +57,8 @@ impl Language {
             (false, "printer") => "Printer",
             (true, "layout") => "Layout",
             (false, "layout") => "Layout",
+            (true, "export_pdf") => "Exportar PDF preparado",
+            (false, "export_pdf") => "Export prepared PDF",
             (true, "open") => "Abrir PDF...",
             (false, "open") => "Open PDF...",
             (true, "drop") => "Arraste um PDF para esta janela",
