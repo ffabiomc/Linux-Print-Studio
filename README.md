@@ -129,3 +129,7 @@ The manual duplex dialog can now display the CUPS job identifier returned for th
 ### Interrupted manual duplex jobs
 
 When the user cancels the tracked front job through the application's queue dialog, the current duplex session blocks the back pass; start a fresh session instead. While the tracked front job remains in the CUPS queue, the paper-refeed confirmation is disabled. Before submitting the backs, the application queries CUPS again and refuses to continue if the front job is still listed or the query fails. **Important:** an absent job is not proof of successful printing; canceled/failed jobs may disappear too. Always inspect the physical output. External cancellation or printer failures are not yet reliably distinguishable from completion, so this is a safeguard rather than automatic completion verification.
+
+## Pre-release functional testing
+
+Run `bash scripts/check-print-environment.sh` to verify that CUPS client and Poppler commands are installed and to inspect available printer destinations **without sending any jobs**. Follow [the functional acceptance checklist](docs/functional-test-plan.md) for real-printer tests covering normal printing, booklet, N-up, poster 2×1 and 1×2, manual duplex, cancellation, failure handling, and UI navigation. These cases are not considered passed until physically executed and recorded. Rust CI does not validate printer hardware.
