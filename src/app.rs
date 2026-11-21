@@ -1,4 +1,5 @@
 use crate::calibration;
+use crate::cups::{self, Printers};
 use crate::document::PdfDocument;
 use crate::duplex::{self, FeedOrder};
 use crate::duplex_export;
@@ -29,6 +30,9 @@ pub struct PrintStudioApp {
     refeed: Refeed,
     profiles: Vec<PrinterProfile>,
     profile_name: String,
+    cups_printers: Option<Printers>,
+    selected_printer: String,
+    cups_error: Option<String>,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -50,6 +54,9 @@ impl Default for PrintStudioApp {
                 .and_then(|path| profiles::load(&path))
                 .unwrap_or_default(),
             profile_name: String::new(),
+            cups_printers: None,
+            selected_printer: String::new(),
+            cups_error: None,
             status: None,
             preview: None,
             preview_page: 0,
@@ -394,6 +401,45 @@ impl eframe::App for PrintStudioApp {
                 ui.add(egui::DragValue::new(&mut self.copies).range(1..=999));
                 ui.separator();
                 ui.heading(self.language.text("printer"));
+                if ui.button(self.language.text("refresh_printers")).clicked() {
+                    match cups::discover() {
+                        Ok(printers) => {
+                            if !printers.names.contains(&self.selected_printer) {
+                                self.selected_printer =
+                                    printers.default.clone().unwrap_or_default();
+                            }
+                            self.cups_printers = Some(printers);
+                            self.cups_error = None;
+                        }
+                        Err(error) => {
+                            self.cups_printers = None;
+                            self.cups_error = Some(error);
+                        }
+                    }
+                }
+                if let Some(printers) = &self.cups_printers {
+                    if printers.names.is_empty() {
+                        ui.label(self.language.text("no_printers"));
+                    } else {
+                        egui::ComboBox::from_id_salt("cups_printers")
+                            .selected_text(&self.selected_printer)
+                            .show_ui(ui, |ui| {
+                                for name in &printers.names {
+                                    ui.selectable_value(
+                                        &mut self.selected_printer,
+                                        name.clone(),
+                                        name,
+                                    );
+                                }
+                            });
+                        if printers.default.as_ref() == Some(&self.selected_printer) {
+                            ui.small(self.language.text("default_printer"));
+                        }
+                    }
+                }
+                if let Some(error) = &self.cups_error {
+                    ui.small(error);
+                }
                 ui.label(self.language.text("not_ready"));
                 ui.add_enabled(false, egui::Button::new(self.language.text("print")));
             });
