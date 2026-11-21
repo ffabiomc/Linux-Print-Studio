@@ -87,3 +87,7 @@ The manual duplex panel now records one of four physical refeed positions (print
 ## CUPS printer discovery (read-only, experimental)
 
 Click **Find CUPS printers** in the printer panel to query local CUPS printer destinations using `lpstat -e`. The application also attempts `lpstat -d` to identify the system default printer. Select a destination in the drop-down. This requires the `lpstat` client utility and an accessible CUPS configuration/service; on Debian/Ubuntu it is commonly provided by `cups-client`. Discovery is triggered by the user and may briefly block the UI while the command runs. No jobs are submitted, printer settings are changed, or documents are sent. The Print button remains disabled. Printer status and capabilities are not yet queried.
+
+## CUPS status and capabilities (read-only, experimental)
+
+After selecting a discovered printer, click **Check printer status and capabilities**. The application runs `lpstat -p PRINTER` and `lpoptions -p PRINTER -l`, passing the printer name as a separate command argument (not through a shell). The output is displayed as reported by CUPS/driver, including available options when exposed. Driverless printers and some configurations may provide limited or no options. This does not guarantee support for any specific paper size, color mode, resolution, or duplex setting. The command may briefly block the UI; no print job is submitted.
