@@ -247,7 +247,9 @@ impl eframe::App for PrintStudioApp {
                         if ui.button(self.language.text("save_profile")).clicked() {
                             let name = self.profile_name.trim().to_owned();
                             let mut updated = self.profiles.clone();
-                            if let Some(profile) = updated.iter_mut().find(|profile| profile.name == name) {
+                            if let Some(profile) =
+                                updated.iter_mut().find(|profile| profile.name == name)
+                            {
                                 profile.back_feed = self.back_feed;
                             } else {
                                 updated.push(PrinterProfile {
@@ -255,14 +257,17 @@ impl eframe::App for PrintStudioApp {
                                     back_feed: self.back_feed,
                                 });
                             }
-                            self.status = Some(match profiles::config_path()
-                                .and_then(|path| profiles::save(&path, &updated)) {
-                                Ok(()) => {
-                                    self.profiles = updated;
-                                    self.language.text("profile_saved").to_owned()
-                                }
-                                Err(error) => format!("Profile save failed: {error}"),
-                            });
+                            self.status = Some(
+                                match profiles::config_path()
+                                    .and_then(|path| profiles::save(&path, &updated))
+                                {
+                                    Ok(()) => {
+                                        self.profiles = updated;
+                                        self.language.text("profile_saved").to_owned()
+                                    }
+                                    Err(error) => format!("Profile save failed: {error}"),
+                                },
+                            );
                         }
                         egui::ComboBox::from_id_salt("printer_profile")
                             .selected_text(self.language.text("load_profile"))
