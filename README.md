@@ -49,3 +49,11 @@ Printing, PDF layout transformations, and CUPS virtual printer integration are *
 ## Imposition planning (0.3.0 development)
 
 The `src/imposition.rs` module calculates booklet page order and N-up sheet-side slots (1, 2, 4, 6, 9 or 16 pages per side). The UI shows a limited textual plan. This is **planning only**: it does not yet generate imposed PDFs, rotate duplex backs, handle poster tiling, or print. Output must not be treated as print-ready. Unit tests cover common page counts and blank padding.
+
+## Experimental PDF export (0.3.0)
+
+Select **Booklet** or **Multiple pages**, open a PDF, and choose **Export prepared PDF**. The exporter produces an A4 PDF with imposed pages using Poppler `pdftoppm` and `lopdf`.
+
+**Limitations:** export is raster-based (text selection/search and vector fidelity are lost); it may take time and memory for large documents and currently runs on the UI thread. Source files are limited to 1000 pages; Poppler must be installed. This does not support posters, duplex back rotation, automatic/manual printing, custom paper sizes, color profiles, crop marks, bleed, or CUPS yet. Booklet order must be checked against the printer's duplex flipping behavior before printing. Do not overwrite the source file. Physical printing is not yet implemented.
+
+The Rust CI validates compilation and unit tests, not actual printer output or rendered-page fidelity.
