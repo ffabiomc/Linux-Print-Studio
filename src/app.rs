@@ -34,6 +34,7 @@ pub struct PrintStudioApp {
     selected_printer: String,
     cups_error: Option<String>,
     printer_details: Option<PrinterDetails>,
+    selected_options: std::collections::BTreeMap<String, String>,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -59,6 +60,7 @@ impl Default for PrintStudioApp {
             selected_printer: String::new(),
             cups_error: None,
             printer_details: None,
+            selected_options: std::collections::BTreeMap::new(),
             status: None,
             preview: None,
             preview_page: 0,
@@ -405,6 +407,7 @@ impl eframe::App for PrintStudioApp {
                 ui.heading(self.language.text("printer"));
                 if ui.button(self.language.text("refresh_printers")).clicked() {
                     self.printer_details = None;
+                    self.selected_options.clear();
                     match cups::discover() {
                         Ok(printers) => {
                             if !printers.names.contains(&self.selected_printer) {
@@ -437,6 +440,7 @@ impl eframe::App for PrintStudioApp {
                                         .changed()
                                     {
                                         self.printer_details = None;
+                                        self.selected_options.clear();
                                     }
                                 }
                             });
@@ -453,6 +457,15 @@ impl eframe::App for PrintStudioApp {
                 {
                     match cups::details(&self.selected_printer) {
                         Ok(details) => {
+                            self.selected_options = details
+                                .choices
+                                .iter()
+                                .filter_map(|option| {
+                                    option.default.as_ref().map(|value| {
+                                        (option.key.clone(), value.clone())
+                                    })
+                                })
+                                .collect();
                             self.printer_details = Some(details);
                             self.cups_error = None;
                         }
@@ -464,6 +477,23 @@ impl eframe::App for PrintStudioApp {
                 }
                 if let Some(details) = &self.printer_details {
                     ui.label(&details.status);
+                    ui.collapsing(self.language.text("printer_settings"), |ui| {
+                        for option in &details.choices {
+                            ui.label(&option.label);
+                            let selected = self
+                                .selected_options
+                                .entry(option.key.clone())
+                                .or_insert_with(|| option.values[0].clone());
+                            egui::ComboBox::from_id_salt(("cups_option", &option.key))
+                                .selected_text(selected.as_str())
+                                .show_ui(ui, |ui| {
+                                    for value in &option.values {
+                                        ui.selectable_value(selected, value.clone(), value);
+                                    }
+                                });
+                        }
+                        ui.small(self.language.text("settings_preview_only"));
+                    });
                     ui.collapsing(self.language.text("printer_options"), |ui| {
                         egui::ScrollArea::vertical()
                             .max_height(170.0)
