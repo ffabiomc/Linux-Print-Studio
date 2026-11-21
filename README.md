@@ -145,3 +145,7 @@ For Debian/Ubuntu, install the `.deb` using `sudo apt install ./linux-print-stud
 ## RPM packaging (experimental)
 
 The **Linux packages** workflow also builds an x86_64 `.rpm` with `rpmbuild`, placing it alongside the Debian package and AppImage in the workflow artifact. RPM shared-library dependencies are detected from the Ubuntu-built binary, so **installation compatibility with Fedora, Rocky Linux, AlmaLinux and openSUSE has not yet been validated**. Test the RPM in a clean target distribution before relying on it; some distributions may need a native RPM build and adjusted dependency names. The package uses system CUPS and Poppler tools.
+
+## Package integrity checks
+
+The Linux packages workflow runs `packaging/verify-packages.sh` after building DEB, RPM and AppImage. The script inspects the package payloads, validates desktop launchers, checks the AppImage type-2 signature, and writes `SHA256SUMS` into the downloadable artifact. On Linux, verify downloaded files with `sha256sum -c SHA256SUMS` from the same directory. This is a corruption/integrity check, **not** a cryptographic publisher signature or proof that the software is safe. Package inspection does not test runtime compatibility or physical printing.
