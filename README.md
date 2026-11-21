@@ -91,3 +91,7 @@ Click **Find CUPS printers** in the printer panel to query local CUPS printer de
 ## CUPS status and capabilities (read-only, experimental)
 
 After selecting a discovered printer, click **Check printer status and capabilities**. The application runs `lpstat -p PRINTER` and `lpoptions -p PRINTER -l`, passing the printer name as a separate command argument (not through a shell). The output is displayed as reported by CUPS/driver, including available options when exposed. Driverless printers and some configurations may provide limited or no options. This does not guarantee support for any specific paper size, color mode, resolution, or duplex setting. The command may briefly block the UI; no print job is submitted.
+
+## CUPS driver option selectors (experimental)
+
+After **Check printer status and capabilities**, expand **Available printer settings** to select among the choices exposed by `lpoptions -l`. Defaults marked with an asterisk are preselected. These selections are in-memory only; switching printers or refreshing the list clears them. They do **not** change system printer defaults or submit a job. Some CUPS/IPP drivers expose differently formatted or incomplete option descriptions; those lines remain visible in the raw options section but may not produce selectors. Printing remains disabled.
