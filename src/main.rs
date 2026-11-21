@@ -1,6 +1,7 @@
 mod app;
 mod document;
 mod i18n;
+mod preview;
 
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions::default();
