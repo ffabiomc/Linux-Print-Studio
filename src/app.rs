@@ -35,6 +35,7 @@ pub struct PrintStudioApp {
     cups_error: Option<String>,
     printer_details: Option<PrinterDetails>,
     selected_options: std::collections::BTreeMap<String, String>,
+    confirm_print: bool,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -61,6 +62,7 @@ impl Default for PrintStudioApp {
             cups_error: None,
             printer_details: None,
             selected_options: std::collections::BTreeMap::new(),
+            confirm_print: false,
             status: None,
             preview: None,
             preview_page: 0,
@@ -506,8 +508,68 @@ impl eframe::App for PrintStudioApp {
                     });
                 }
                 ui.label(self.language.text("not_ready"));
-                ui.add_enabled(false, egui::Button::new(self.language.text("print")));
+                let can_print = self.document.is_some()
+                    && !self.selected_printer.is_empty()
+                    && self.layout == Layout::Normal;
+                if ui
+                    .add_enabled(can_print, egui::Button::new(self.language.text("print")))
+                    .clicked()
+                {
+                    self.confirm_print = true;
+                }
             });
+
+        if self.confirm_print {
+            egui::Window::new(self.language.text("confirm_print"))
+                .collapsible(false)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    if let Some(document) = &self.document {
+                        ui.label(document.path.display().to_string());
+                    }
+                    ui.label(format!(
+                        "{}: {}",
+                        self.language.text("printer"),
+                        self.selected_printer
+                    ));
+                    ui.label(format!(
+                        "{}: {}",
+                        self.language.text("copies"),
+                        self.copies
+                    ));
+                    for (key, value) in &self.selected_options {
+                        ui.label(format!("{key}: {value}"));
+                    }
+                    ui.small(self.language.text("print_normal_only"));
+                    ui.horizontal(|ui| {
+                        if ui.button(self.language.text("cancel")).clicked() {
+                            self.confirm_print = false;
+                        }
+                        if ui.button(self.language.text("confirm_print")).clicked() {
+                            self.confirm_print = false;
+                            if let Some(document) = &self.document {
+                                let choices = self
+                                    .printer_details
+                                    .as_ref()
+                                    .map(|details| details.choices.as_slice())
+                                    .unwrap_or(&[]);
+                                self.status = Some(
+                                    match cups::submit(
+                                        &self.selected_printer,
+                                        &document.path,
+                                        self.copies,
+                                        choices,
+                                        &self.selected_options,
+                                    ) {
+                                        Ok(message) => format!("CUPS: {message}"),
+                                        Err(error) => format!("CUPS: {error}"),
+                                    },
+                                );
+                            }
+                        }
+                    });
+                });
+        }
 
         self.refresh_preview(ctx);
         egui::CentralPanel::default().show(ctx, |ui| {
