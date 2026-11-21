@@ -111,7 +111,6 @@ pub fn details(printer: &str) -> Result<PrinterDetails, String> {
     })
 }
 
-
 /// Submit a PDF to CUPS only after the user confirms the job.
 pub fn submit(
     printer: &str,
@@ -130,7 +129,11 @@ pub fn submit(
         return Err("Invalid copy count".to_owned());
     }
     let mut command = Command::new("lp");
-    command.arg("-d").arg(printer).arg("-n").arg(copies.to_string());
+    command
+        .arg("-d")
+        .arg(printer)
+        .arg("-n")
+        .arg(copies.to_string());
     for (key, value) in selected {
         if !choices
             .iter()
