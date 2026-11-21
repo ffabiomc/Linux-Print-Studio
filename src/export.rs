@@ -147,7 +147,7 @@ pub fn export_poster(
             let x = -(col as f32 * step_w);
             let y = -((tiles - 1 - row) as f32 * step_h);
             let mut commands = format!(
-                "q 0 0 {paper_w:.3} {paper_h:.3} re W n {poster_w:.3} 0 0 {poster_h:.3} {x:.3} {y:.3} cm /PosterImage Do Q\\n"
+                "q 0 0 {paper_w:.3} {paper_h:.3} re W n {poster_w:.3} 0 0 {poster_h:.3} {x:.3} {y:.3} cm /PosterImage Do Q\n"
             );
             if crop_marks && overlap > 0.0 {
                 commands.push_str(&poster_crop_marks(row, col, tiles, overlap, paper_w, paper_h));
@@ -187,16 +187,16 @@ fn poster_crop_marks(
     paper_w: f32,
     paper_h: f32,
 ) -> String {
-    let mut marks = String::from("q 0 G 0.5 w [3 3] 0 d\\n");
+    let mut marks = String::from("q 0 G 0.5 w [3 3] 0 d\n");
     if col + 1 < tiles {
         let x = paper_w - overlap;
-        marks.push_str(&format!("{x:.3} 0 m {x:.3} {paper_h:.3} l S\\n"));
+        marks.push_str(&format!("{x:.3} 0 m {x:.3} {paper_h:.3} l S\n"));
     }
     if row + 1 < tiles {
         let y = overlap;
-        marks.push_str(&format!("0 {y:.3} m {paper_w:.3} {y:.3} l S\\n"));
+        marks.push_str(&format!("0 {y:.3} m {paper_w:.3} {y:.3} l S\n"));
     }
-    marks.push_str("Q\\n");
+    marks.push_str("Q\n");
     marks
 }
 
