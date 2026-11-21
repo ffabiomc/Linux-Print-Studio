@@ -26,7 +26,8 @@ pub struct PrintStudioApp {
     layout: Layout,
     copies: u32,
     pages_per_sheet: usize,
-    poster_tiles: usize,
+    poster_columns: usize,
+    poster_rows: usize,
     poster_overlap_mm: f32,
     poster_crop_marks: bool,
     back_feed: FeedOrder,
@@ -56,7 +57,8 @@ impl Default for PrintStudioApp {
             layout: Layout::Normal,
             copies: 1,
             pages_per_sheet: 4,
-            poster_tiles: 2,
+            poster_columns: 2,
+            poster_rows: 2,
             poster_overlap_mm: 4.0,
             poster_crop_marks: false,
             back_feed: FeedOrder::Reversed,
@@ -127,7 +129,8 @@ impl PrintStudioApp {
                     &document.path,
                     file.path(),
                     self.page,
-                    self.poster_tiles,
+                    self.poster_columns,
+                    self.poster_rows,
                     self.poster_overlap_mm,
                     self.poster_crop_marks,
                 )?;
@@ -235,16 +238,20 @@ impl eframe::App for PrintStudioApp {
                     ui.radio_value(&mut self.layout, layout, self.language.text(key));
                 }
                 if self.layout == Layout::Poster {
-                    ui.label(self.language.text("poster_grid"));
-                    egui::ComboBox::from_id_salt("poster_tiles")
-                        .selected_text(format!("{} × {}", self.poster_tiles, self.poster_tiles))
+                    ui.label(self.language.text("poster_columns"));
+                    egui::ComboBox::from_id_salt("poster_columns")
+                        .selected_text(self.poster_columns.to_string())
                         .show_ui(ui, |ui| {
-                            for count in [2, 3, 4] {
-                                ui.selectable_value(
-                                    &mut self.poster_tiles,
-                                    count,
-                                    format!("{count} × {count}"),
-                                );
+                            for count in 1..=4 {
+                                ui.selectable_value(&mut self.poster_columns, count, count.to_string());
+                            }
+                        });
+                    ui.label(self.language.text("poster_rows"));
+                    egui::ComboBox::from_id_salt("poster_rows")
+                        .selected_text(self.poster_rows.to_string())
+                        .show_ui(ui, |ui| {
+                            for count in 1..=4 {
+                                ui.selectable_value(&mut self.poster_rows, count, count.to_string());
                             }
                         });
                     ui.label(self.language.text("poster_overlap"));
@@ -261,12 +268,12 @@ impl eframe::App for PrintStudioApp {
                     ui.label(format!(
                         "{}: {}",
                         self.language.text("poster_sheets"),
-                        self.poster_tiles * self.poster_tiles
+                        self.poster_columns * self.poster_rows
                     ));
                     egui::Grid::new("poster_tile_preview").show(ui, |ui| {
-                        for row in 0..self.poster_tiles {
-                            for col in 0..self.poster_tiles {
-                                ui.label(format!("[{}]", row * self.poster_tiles + col + 1));
+                        for row in 0..self.poster_rows {
+                            for col in 0..self.poster_columns {
+                                ui.label(format!("[{}]", row * self.poster_columns + col + 1));
                             }
                             ui.end_row();
                         }
@@ -367,7 +374,8 @@ impl eframe::App for PrintStudioApp {
                                         &document.path,
                                         &path,
                                         self.page,
-                                        self.poster_tiles,
+                                        self.poster_columns,
+                                        self.poster_rows,
                                         self.poster_overlap_mm,
                                         self.poster_crop_marks,
                                     ) {
