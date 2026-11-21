@@ -1,0 +1,78 @@
+name: Linux packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxkbcommon-dev libwayland-dev libasound2-dev libudev-dev libdbus-1-dev libssl-dev libfontconfig1-dev libfreetype6-dev pkg-config libfuse2 file desktop-file-utils
+      - name: Build release executable
+        run: cargo build --release --locked
+      - name: Prepare Debian package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n1)"
+          stage="$RUNNER_TEMP/debroot"
+          mkdir -p "$stage/DEBIAN" "$stage/usr/bin" "$stage/usr/share/applications"
+          install -m755 target/release/linux-print-studio "$stage/usr/bin/linux-print-studio"
+          install -m644 packaging/linux-print-studio.desktop "$stage/usr/share/applications/linux-print-studio.desktop"
+          cat > "$stage/DEBIAN/control" <<EOF
+          Package: linux-print-studio
+          Version: $version
+          Section: graphics
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Linux Print Studio contributors
+          Depends: cups-client, poppler-utils, libgtk-3-0, libxkbcommon0, libwayland-client0, libasound2, libudev1, libdbus-1-3
+          Description: Linux desktop PDF print preparation and CUPS printing
+           Desktop print utility with booklet, poster, N-up and manual duplex workflows.
+          EOF
+          dpkg-deb --build --root-owner-group "$stage" "linux-print-studio_${version}_amd64.deb"
+          dpkg-deb --info "linux-print-studio_${version}_amd64.deb"
+      - name: Prepare AppImage staging directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications
+          install -m755 target/release/linux-print-studio AppDir/usr/bin/linux-print-studio
+          install -m644 packaging/linux-print-studio.desktop AppDir/usr/share/applications/linux-print-studio.desktop
+          install -m644 packaging/linux-print-studio.desktop AppDir/linux-print-studio.desktop
+          cp packaging/linux-print-studio.svg AppDir/linux-print-studio.svg
+          mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
+          cp packaging/linux-print-studio.svg AppDir/usr/share/icons/hicolor/scalable/apps/linux-print-studio.svg
+          cat > AppDir/AppRun <<'EOF'
+          #!/bin/sh
+          HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+          exec "$HERE/usr/bin/linux-print-studio" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+      - name: Build AppImage
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir Linux-Print-Studio-x86_64.AppImage
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-print-studio-linux-x86_64
+          path: |
+            linux-print-studio_*_amd64.deb
+            Linux-Print-Studio-x86_64.AppImage
+          if-no-files-found: error
