@@ -61,3 +61,9 @@ The Rust CI validates compilation and unit tests, not actual printer output or r
 ## Manual duplex planning (experimental)
 
 For an exported booklet or N-up PDF, the interface shows page numbers for a front-side pass and a back-side pass. Choose same or reversed order for the backs. **This does not print, split the PDF into two files, rotate backs, or control the paper feed.** The user must print the listed pages using an external PDF viewer and perform a short two-sheet test to establish the correct stack orientation and back-side order for their specific printer. Page numbers refer to the **exported imposed PDF**, not the source PDF. The final sheet can have a blank back.
+
+## Split imposed PDF into two manual duplex passes (experimental)
+
+In the manual duplex section, choose **Split PDF into fronts and backs**, select an **already imposed** PDF (not the original source), then choose a base output name. The app writes `*-fronts.pdf` and `*-backs.pdf` using Poppler `pdfseparate` and `pdfunite`. Both executables must be installed (Debian/Ubuntu: `sudo apt install poppler-utils`). Output files must not already exist. A single-page imposed PDF produces only a fronts file. The app does not print or automatically detect paper-feed orientation.
+
+**Important:** the split assumes the imposed PDF has alternating front/back pages in physical sheet order, as produced by the booklet planner. For N-up layouts, an odd final face may require an empty back for a complete stack; test with a small document first. Some printers reverse the delivered stack; select the matching back order after a physical two-sheet calibration. Splitting preserves PDF objects better than rasterizing again, but Poppler may not preserve every interactive feature. This is an experimental implementation and has not been physically validated.
