@@ -461,9 +461,10 @@ impl eframe::App for PrintStudioApp {
                                 .choices
                                 .iter()
                                 .filter_map(|option| {
-                                    option.default.as_ref().map(|value| {
-                                        (option.key.clone(), value.clone())
-                                    })
+                                    option
+                                        .default
+                                        .as_ref()
+                                        .map(|value| (option.key.clone(), value.clone()))
                                 })
                                 .collect();
                             self.printer_details = Some(details);
