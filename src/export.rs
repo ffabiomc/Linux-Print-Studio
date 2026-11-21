@@ -11,7 +11,12 @@ pub enum ExportLayout {
     Multiple(usize),
 }
 
-pub fn export_pdf(source: &Path, destination: &Path, pages: usize, layout: ExportLayout) -> Result<(), String> {
+pub fn export_pdf(
+    source: &Path,
+    destination: &Path,
+    pages: usize,
+    layout: ExportLayout,
+) -> Result<(), String> {
     if source == destination {
         return Err("Source and destination must differ".to_owned());
     }
@@ -24,7 +29,11 @@ pub fn export_pdf(source: &Path, destination: &Path, pages: usize, layout: Expor
     }
     .map_err(str::to_owned)?;
     let landscape = matches!(layout, ExportLayout::Booklet);
-    let (paper_w, paper_h) = if landscape { (842.0_f32, 595.0_f32) } else { (595.0, 842.0) };
+    let (paper_w, paper_h) = if landscape {
+        (842.0_f32, 595.0_f32)
+    } else {
+        (595.0, 842.0)
+    };
     let mut pdf = Document::with_version("1.5");
     let pages_id = pdf.new_object_id();
     let mut page_ids = Vec::new();
@@ -35,7 +44,9 @@ pub fn export_pdf(source: &Path, destination: &Path, pages: usize, layout: Expor
         let mut xobjects = lopdf::Dictionary::new();
         let mut commands = String::new();
         for (index, source_page) in side.slots.iter().enumerate() {
-            let Some(source_page) = source_page else { continue };
+            let Some(source_page) = source_page else {
+                continue;
+            };
             let (width, height, pixels) = rasterize(source, *source_page)?;
             let image_id = pdf.add_object(Stream::new(
                 dictionary! {
@@ -107,7 +118,16 @@ fn grid(side: &SheetSide, booklet: bool) -> (usize, usize) {
 
 fn rasterize(path: &Path, page: usize) -> Result<(u32, u32, Vec<u8>), String> {
     let output = Command::new("pdftoppm")
-        .args(["-f", &page.to_string(), "-l", &page.to_string(), "-singlefile", "-scale-to", "1200", "-png"])
+        .args([
+            "-f",
+            &page.to_string(),
+            "-l",
+            &page.to_string(),
+            "-singlefile",
+            "-scale-to",
+            "1200",
+            "-png",
+        ])
         .arg(path)
         .arg("-")
         .output()
@@ -133,9 +153,32 @@ mod tests {
     use super::*;
     #[test]
     fn grids_match_supported_n_up_modes() {
-        for (n, expected) in [(1, (1, 1)), (2, (1, 2)), (4, (2, 2)), (6, (2, 3)), (9, (3, 3)), (16, (4, 4))] {
-            assert_eq!(grid(&SheetSide { slots: vec![None; n] }, false), expected);
+        for (n, expected) in [
+            (1, (1, 1)),
+            (2, (1, 2)),
+            (4, (2, 2)),
+            (6, (2, 3)),
+            (9, (3, 3)),
+            (16, (4, 4)),
+        ] {
+            assert_eq!(
+                grid(
+                    &SheetSide {
+                        slots: vec![None; n]
+                    },
+                    false
+                ),
+                expected
+            );
         }
-        assert_eq!(grid(&SheetSide { slots: vec![None; 2] }, true), (2, 1));
+        assert_eq!(
+            grid(
+                &SheetSide {
+                    slots: vec![None; 2]
+                },
+                true
+            ),
+            (2, 1)
+        );
     }
 }
