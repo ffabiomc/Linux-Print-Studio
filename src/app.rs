@@ -119,12 +119,7 @@ impl PrintStudioApp {
                     .suffix(".pdf")
                     .tempfile()
                     .map_err(|error| error.to_string())?;
-                export::export_poster(
-                    &document.path,
-                    file.path(),
-                    self.page,
-                    self.poster_tiles,
-                )?;
+                export::export_poster(&document.path, file.path(), self.page, self.poster_tiles)?;
                 Some(file)
             }
         };
@@ -332,15 +327,17 @@ impl eframe::App for PrintStudioApp {
                                 .set_file_name("poster.pdf")
                                 .save_file()
                             {
-                                self.status = Some(match export::export_poster(
-                                    &document.path,
-                                    &path,
-                                    self.page,
-                                    self.poster_tiles,
-                                ) {
-                                    Ok(()) => format!("PDF saved: {}", path.display()),
-                                    Err(error) => format!("Poster export failed: {error}"),
-                                });
+                                self.status = Some(
+                                    match export::export_poster(
+                                        &document.path,
+                                        &path,
+                                        self.page,
+                                        self.poster_tiles,
+                                    ) {
+                                        Ok(()) => format!("PDF saved: {}", path.display()),
+                                        Err(error) => format!("Poster export failed: {error}"),
+                                    },
+                                );
                             }
                         }
                     }
