@@ -251,6 +251,15 @@ fn rasterize(path: &Path, page: usize) -> Result<(u32, u32, Vec<u8>), String> {
 mod tests {
     use super::*;
     #[test]
+    fn poster_cutting_guides_follow_tile_boundaries() {
+        let inner = poster_crop_marks(0, 0, 2, 12.0, 595.0, 842.0);
+        assert!(inner.contains("583.000 0 m"));
+        assert!(inner.contains("0 12.000 m"));
+        let last = poster_crop_marks(1, 1, 2, 12.0, 595.0, 842.0);
+        assert!(!last.contains(" l S"));
+    }
+
+    #[test]
     fn grids_match_supported_n_up_modes() {
         for (n, expected) in [
             (1, (1, 1)),
