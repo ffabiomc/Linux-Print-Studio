@@ -30,6 +30,8 @@ pub struct PrintStudioApp {
     poster_rows: usize,
     poster_overlap_mm: f32,
     poster_crop_marks: bool,
+    poster_selected_tile: usize,
+    poster_tile_preview: Option<egui::TextureHandle>,
     back_feed: FeedOrder,
     refeed: Refeed,
     profiles: Vec<PrinterProfile>,
@@ -61,6 +63,8 @@ impl Default for PrintStudioApp {
             poster_rows: 2,
             poster_overlap_mm: 4.0,
             poster_crop_marks: false,
+            poster_selected_tile: 1,
+            poster_tile_preview: None,
             back_feed: FeedOrder::Reversed,
             refeed: Refeed::Unknown,
             profiles: profiles::config_path()
@@ -91,6 +95,8 @@ impl PrintStudioApp {
                 self.document = Some(document);
                 self.preview = None;
                 self.preview_page = 0;
+                self.poster_tile_preview = None;
+                self.poster_selected_tile = 1;
             }
             Err(error) => self.status = Some(error),
         }
@@ -147,6 +153,32 @@ impl PrintStudioApp {
             choices,
             &self.selected_options,
         )
+    }
+
+    fn render_poster_tile(&mut self, ctx: &egui::Context) -> Result<(), String> {
+        let document = self.document.as_ref().ok_or("No PDF selected")?;
+        let tile = self.poster_selected_tile;
+        if tile == 0 || tile > self.poster_columns * self.poster_rows {
+            return Err("Invalid poster tile".to_owned());
+        }
+        let file = tempfile::Builder::new()
+            .prefix("linux-print-studio-preview-")
+            .suffix(".pdf")
+            .tempfile()
+            .map_err(|error| error.to_string())?;
+        export::export_poster(
+            &document.path,
+            file.path(),
+            self.page,
+            self.poster_columns,
+            self.poster_rows,
+            self.poster_overlap_mm,
+            self.poster_crop_marks,
+        )?;
+        let image = preview::render_page(file.path(), tile)?;
+        self.poster_tile_preview =
+            Some(ctx.load_texture("poster-tile", image, egui::TextureOptions::LINEAR));
+        Ok(())
     }
 
     fn refresh_preview(&mut self, ctx: &egui::Context) {
@@ -764,8 +796,31 @@ impl eframe::App for PrintStudioApp {
                         self.page += 1;
                     }
                 });
+                if self.layout == Layout::Poster {
+                    let total = self.poster_columns * self.poster_rows;
+                    self.poster_selected_tile = self.poster_selected_tile.clamp(1, total);
+                    ui.horizontal(|ui| {
+                        ui.label(self.language.text("poster_select_tile"));
+                        ui.add(
+                            egui::DragValue::new(&mut self.poster_selected_tile)
+                                .range(1..=total),
+                        );
+                        if ui.button(self.language.text("poster_render_tile")).clicked() {
+                            self.status = match self.render_poster_tile(ctx) {
+                                Ok(()) => None,
+                                Err(error) => Some(error),
+                            };
+                        }
+                    });
+                    ui.small(self.language.text("poster_preview_note"));
+                }
                 ui.separator();
-                if let Some(texture) = &self.preview {
+                let shown_texture = if self.layout == Layout::Poster {
+                    self.poster_tile_preview.as_ref().or(self.preview.as_ref())
+                } else {
+                    self.preview.as_ref()
+                };
+                if let Some(texture) = shown_texture {
                     egui::ScrollArea::both().show(ui, |ui| {
                         let available = ui.available_width().max(1.0);
                         let size = texture.size_vec2();
