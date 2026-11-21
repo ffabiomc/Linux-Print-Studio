@@ -111,6 +111,20 @@ pub fn details(printer: &str) -> Result<PrinterDetails, String> {
     })
 }
 
+/// Extract the queue identifier returned by lp, without trusting arbitrary text.
+pub fn submitted_job_id(output: &str, printer: &str) -> Option<String> {
+    let prefix = format!("{printer}-");
+    output.split_whitespace().find_map(|word| {
+        let candidate = word.trim_end_matches(|ch: char| !ch.is_ascii_digit());
+        let number = candidate.strip_prefix(&prefix)?;
+        if !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit()) {
+            Some(candidate.to_owned())
+        } else {
+            None
+        }
+    })
+}
+
 /// Submit one manual-duplex pass, explicitly disabling driver-side duplex.
 pub fn submit_simplex(printer: &str, pdf: &Path) -> Result<String, String> {
     if printer.is_empty() || printer.starts_with('-') || printer.chars().any(char::is_control) {
@@ -292,6 +306,16 @@ mod tests {
     #[test]
     fn ignores_invalid_job_identifiers() {
         assert!(parse_jobs("Office-abc user\nOffice-12x user\n", "Office").is_empty());
+    }
+
+    #[test]
+    fn extracts_submitted_job_id() {
+        assert_eq!(
+            submitted_job_id("request id is Office-123 (1 file(s))", "Office"),
+            Some("Office-123".to_owned())
+        );
+        assert_eq!(submitted_job_id("unknown response", "Office"), None);
+        assert_eq!(submitted_job_id("Other-123", "Office"), None);
     }
 
     #[test]
