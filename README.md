@@ -79,3 +79,7 @@ This tool **does not** detect the printer, infer the correct refeed orientation,
 The manual-duplex panel lets you name a printer profile and save its back-side page order (same or reversed). Saved profiles can be selected again later. Data is stored locally at `$XDG_CONFIG_HOME/linux-print-studio/printer-profiles.txt` or `~/.config/linux-print-studio/printer-profiles.txt` if XDG_CONFIG_HOME is not set. No account or network service is required. Saving a profile with the same name updates its page order.
 
 **Limitations:** these are user-named presets, not discovered CUPS printers. They store only back-side page order; they do not yet record paper orientation, rotation, face-up/face-down output, tray, or automatic printing. Always verify paper handling on the physical printer. The format is an internal tab-delimited text file; do not edit it while the application is running.
+
+## Paper refeed orientation presets
+
+The manual duplex panel now records one of four physical refeed positions (printed face up/down and top/bottom edge first), or **Not calibrated**. Select the position only after a physical test; it is stored with the named printer profile and restored on selection. Older profiles without this field load as **Not calibrated**. This setting provides a reminder only: it does not yet modify PDF rotation, printer trays, or CUPS print jobs. The feed orientation of a stack and the back-side page order are independent settings, and both must be tested before relying on multi-sheet duplex.
