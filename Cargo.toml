@@ -1,6 +1,6 @@
 [package]
 name = "linux-print-studio"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 description = "Open-source print management desktop app for Linux"
 repository = "https://github.com/ffabiomc/Linux-Print-Studio"
