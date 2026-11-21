@@ -7,6 +7,7 @@ mod export;
 mod i18n;
 mod imposition;
 mod preview;
+mod profiles;
 
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions::default();
