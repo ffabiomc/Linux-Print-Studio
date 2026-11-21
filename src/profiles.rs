@@ -3,10 +3,43 @@ use crate::duplex::FeedOrder;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Refeed {
+    FaceUpTopFirst,
+    FaceUpBottomFirst,
+    FaceDownTopFirst,
+    FaceDownBottomFirst,
+    Unknown,
+}
+
+impl Refeed {
+    fn code(self) -> &'static str {
+        match self {
+            Self::Unknown => "unknown",
+            Self::FaceUpTopFirst => "up-top",
+            Self::FaceUpBottomFirst => "up-bottom",
+            Self::FaceDownTopFirst => "down-top",
+            Self::FaceDownBottomFirst => "down-bottom",
+        }
+    }
+
+    fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "unknown" => Ok(Self::Unknown),
+            "up-top" => Ok(Self::FaceUpTopFirst),
+            "up-bottom" => Ok(Self::FaceUpBottomFirst),
+            "down-top" => Ok(Self::FaceDownTopFirst),
+            "down-bottom" => Ok(Self::FaceDownBottomFirst),
+            _ => Err("Invalid paper refeed orientation".to_owned()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PrinterProfile {
     pub name: String,
     pub back_feed: FeedOrder,
+    pub refeed: Refeed,
 }
 
 pub fn config_path() -> Result<PathBuf, String> {
@@ -28,7 +61,11 @@ pub fn load(path: &Path) -> Result<Vec<PrinterProfile>, String> {
 fn parse(contents: &str) -> Result<Vec<PrinterProfile>, String> {
     let mut profiles = Vec::new();
     for line in contents.lines() {
-        let (order, name) = line.split_once('\t').ok_or("Invalid profile entry")?;
+        let (order, rest) = line.split_once('\t').ok_or("Invalid profile entry")?;
+        let (name, refeed) = match rest.split_once('\t') {
+            Some((name, value)) => (name, Refeed::parse(value)?),
+            None => (rest, Refeed::Unknown),
+        };
         let back_feed = match order {
             "same" => FeedOrder::Same,
             "reversed" => FeedOrder::Reversed,
@@ -44,6 +81,7 @@ fn parse(contents: &str) -> Result<Vec<PrinterProfile>, String> {
         profiles.push(PrinterProfile {
             name: name.to_owned(),
             back_feed,
+            refeed,
         });
     }
     Ok(profiles)
@@ -70,6 +108,8 @@ pub fn save(path: &Path, profiles: &[PrinterProfile]) -> Result<(), String> {
         content.push_str(order);
         content.push('\t');
         content.push_str(&profile.name);
+        content.push('\t');
+        content.push_str(profile.refeed.code());
         content.push('\n');
     }
     let parent = path.parent().ok_or("Invalid configuration path")?;
@@ -91,9 +131,21 @@ mod tests {
         let profiles = vec![PrinterProfile {
             name: "My printer".to_owned(),
             back_feed: FeedOrder::Reversed,
+            refeed: Refeed::FaceDownTopFirst,
         }];
         save(&path, &profiles).unwrap();
         assert_eq!(load(&path).unwrap(), profiles);
+    }
+
+    #[test]
+    fn reads_legacy_profiles() {
+        let old = parse("same\\tOld printer\\n").unwrap();
+        assert_eq!(old[0].refeed, Refeed::Unknown);
+    }
+
+    #[test]
+    fn rejects_unknown_refeed() {
+        assert!(parse("same\\tPrinter\\tinvalid\\n").is_err());
     }
 
     #[test]
