@@ -101,6 +101,73 @@ pub fn export_pdf(
     Ok(())
 }
 
+
+pub fn export_poster(
+    source: &Path,
+    destination: &Path,
+    page: usize,
+    tiles: usize,
+) -> Result<(), String> {
+    if source == destination || ![2, 3, 4].contains(&tiles) || page == 0 {
+        return Err("Invalid poster settings".to_owned());
+    }
+    // A4 output, 12 pt overlap between neighboring tiles.
+    let (paper_w, paper_h, overlap) = (595.0_f32, 842.0_f32, 12.0_f32);
+    let step_w = paper_w - overlap;
+    let step_h = paper_h - overlap;
+    let poster_w = paper_w + (tiles - 1) as f32 * step_w;
+    let poster_h = paper_h + (tiles - 1) as f32 * step_h;
+    let (width, height, pixels) = rasterize(source, page)?;
+    let mut pdf = Document::with_version("1.5");
+    let pages_id = pdf.new_object_id();
+    let image_id = pdf.add_object(Stream::new(
+        dictionary! {
+            "Type" => "XObject",
+            "Subtype" => "Image",
+            "Width" => width as i64,
+            "Height" => height as i64,
+            "ColorSpace" => "DeviceRGB",
+            "BitsPerComponent" => 8,
+        },
+        pixels,
+    ));
+    let resources_id = pdf.add_object(dictionary! {
+        "XObject" => dictionary! { "PosterImage" => image_id },
+    });
+    let mut page_ids = Vec::new();
+    for row in 0..tiles {
+        for col in 0..tiles {
+            let x = -(col as f32 * step_w);
+            let y = -((tiles - 1 - row) as f32 * step_h);
+            let commands = format!(
+                "q 0 0 {paper_w:.3} {paper_h:.3} re W n {poster_w:.3} 0 0 {poster_h:.3} {x:.3} {y:.3} cm /PosterImage Do Q\n"
+            );
+            let content_id = pdf.add_object(Stream::new(dictionary! {}, commands.into_bytes()));
+            let page_id = pdf.add_object(dictionary! {
+                "Type" => "Page",
+                "Parent" => pages_id,
+                "MediaBox" => vec![0.into(), 0.into(), Object::Real(paper_w), Object::Real(paper_h)],
+                "Resources" => resources_id,
+                "Contents" => content_id,
+            });
+            page_ids.push(page_id);
+        }
+    }
+    pdf.objects.insert(
+        pages_id,
+        Object::Dictionary(dictionary! {
+            "Type" => "Pages",
+            "Kids" => page_ids.iter().copied().map(Object::Reference).collect::<Vec<_>>(),
+            "Count" => page_ids.len() as i64,
+        }),
+    );
+    let catalog_id = pdf.add_object(dictionary! { "Type" => "Catalog", "Pages" => pages_id });
+    pdf.trailer.set("Root", catalog_id);
+    pdf.compress();
+    pdf.save(destination).map_err(|error| error.to_string())?;
+    Ok(())
+}
+
 fn grid(side: &SheetSide, booklet: bool) -> (usize, usize) {
     if booklet {
         return (2, 1);
