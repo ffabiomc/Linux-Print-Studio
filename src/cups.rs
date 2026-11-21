@@ -39,6 +39,49 @@ pub fn discover() -> Result<Printers, String> {
 pub struct PrinterDetails {
     pub status: String,
     pub options: Vec<String>,
+    pub choices: Vec<PrinterOption>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PrinterOption {
+    pub key: String,
+    pub label: String,
+    pub values: Vec<String>,
+    pub default: Option<String>,
+}
+
+pub fn parse_options(output: &str) -> Vec<PrinterOption> {
+    output
+        .lines()
+        .filter_map(|line| {
+            let (header, choices) = line.split_once(':')?;
+            let (key, label) = header.trim().split_once('/')?;
+            if key.is_empty() {
+                return None;
+            }
+            let mut values = Vec::new();
+            let mut default = None;
+            for token in choices.split_whitespace() {
+                let value = token.trim_start_matches('*');
+                if value.is_empty() {
+                    continue;
+                }
+                if token.starts_with('*') {
+                    default = Some(value.to_owned());
+                }
+                values.push(value.to_owned());
+            }
+            if values.is_empty() {
+                return None;
+            }
+            Some(PrinterOption {
+                key: key.to_owned(),
+                label: label.to_owned(),
+                values,
+                default,
+            })
+        })
+        .collect()
 }
 
 pub fn details(printer: &str) -> Result<PrinterDetails, String> {
@@ -56,15 +99,13 @@ pub fn details(printer: &str) -> Result<PrinterDetails, String> {
             String::from_utf8_lossy(&output.stderr).trim()
         ));
     }
-    let options = String::from_utf8(output.stdout)
-        .map_err(|error| error.to_string())?
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(str::to_owned)
-        .collect();
+    let text = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
+    let choices = parse_options(&text);
+    let options = text.lines().map(str::to_owned).collect();
     Ok(PrinterDetails {
         status: status.trim().to_owned(),
         options,
+        choices,
     })
 }
 
@@ -88,6 +129,20 @@ mod tests {
             parse_names("Office_Laser\nHome_Printer\nOffice_Laser\n\n"),
             vec!["Office_Laser", "Home_Printer"]
         );
+    }
+
+    #[test]
+    fn parses_driver_choices() {
+        let parsed = parse_options("PageSize/Media Size: *A4 Letter Legal\\n");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].key, "PageSize");
+        assert_eq!(parsed[0].default.as_deref(), Some("A4"));
+        assert_eq!(parsed[0].values, vec!["A4", "Letter", "Legal"]);
+    }
+
+    #[test]
+    fn ignores_malformed_choices() {
+        assert!(parse_options("not a valid option").is_empty());
     }
 
     #[test]
