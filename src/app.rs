@@ -1,3 +1,4 @@
+use crate::calibration;
 use crate::document::PdfDocument;
 use crate::duplex::{self, FeedOrder};
 use crate::duplex_export;
@@ -234,6 +235,23 @@ impl eframe::App for PrintStudioApp {
                     if let Some(sides) = sides {
                         ui.separator();
                         ui.heading(self.language.text("manual_duplex"));
+                        if ui.button(self.language.text("calibration_pdf")).clicked() {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("PDF", &["pdf"])
+                                .set_file_name("duplex-calibration.pdf")
+                                .save_file()
+                            {
+                                self.status = Some(
+                                    match calibration::create_calibration_pdf(&path) {
+                                        Ok(()) => {
+                                            self.language.text("calibration_saved").to_owned()
+                                        }
+                                        Err(error) => format!("Calibration PDF failed: {error}"),
+                                    },
+                                );
+                            }
+                        }
+                        ui.small(self.language.text("calibration_instructions"));
                         ui.radio_value(
                             &mut self.back_feed,
                             FeedOrder::Reversed,
