@@ -57,3 +57,7 @@ Select **Booklet** or **Multiple pages**, open a PDF, and choose **Export prepar
 **Limitations:** export is raster-based (text selection/search and vector fidelity are lost); it may take time and memory for large documents and currently runs on the UI thread. Source files are limited to 1000 pages; Poppler must be installed. This does not support posters, duplex back rotation, automatic/manual printing, custom paper sizes, color profiles, crop marks, bleed, or CUPS yet. Booklet order must be checked against the printer's duplex flipping behavior before printing. Do not overwrite the source file. Physical printing is not yet implemented.
 
 The Rust CI validates compilation and unit tests, not actual printer output or rendered-page fidelity.
+
+## Manual duplex planning (experimental)
+
+For an exported booklet or N-up PDF, the interface shows page numbers for a front-side pass and a back-side pass. Choose same or reversed order for the backs. **This does not print, split the PDF into two files, rotate backs, or control the paper feed.** The user must print the listed pages using an external PDF viewer and perform a short two-sheet test to establish the correct stack orientation and back-side order for their specific printer. Page numbers refer to the **exported imposed PDF**, not the source PDF. The final sheet can have a blank back.
