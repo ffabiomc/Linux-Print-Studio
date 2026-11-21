@@ -18,6 +18,15 @@ enum Layout {
     Multiple,
 }
 
+struct ManualDuplexSession {
+    _directory: tempfile::TempDir,
+    fronts: std::path::PathBuf,
+    backs: std::path::PathBuf,
+    printer: String,
+    fronts_submitted: bool,
+    paper_reinserted: bool,
+}
+
 pub struct PrintStudioApp {
     language: Language,
     dark_mode: bool,
@@ -44,6 +53,7 @@ pub struct PrintStudioApp {
     confirm_print: bool,
     queue_jobs: Vec<PrintJob>,
     cancel_target: Option<String>,
+    duplex_session: Option<ManualDuplexSession>,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -79,6 +89,7 @@ impl Default for PrintStudioApp {
             confirm_print: false,
             queue_jobs: Vec::new(),
             cancel_target: None,
+            duplex_session: None,
             status: None,
             preview: None,
             preview_page: 0,
@@ -97,6 +108,7 @@ impl PrintStudioApp {
                 self.preview_page = 0;
                 self.poster_tile_preview = None;
                 self.poster_selected_tile = 1;
+                self.duplex_session = None;
             }
             Err(error) => self.status = Some(error),
         }
@@ -153,6 +165,55 @@ impl PrintStudioApp {
             choices,
             &self.selected_options,
         )
+    }
+
+    fn prepare_duplex_session(&mut self) -> Result<(), String> {
+        let document = self.document.as_ref().ok_or("No PDF selected")?;
+        if self.selected_printer.is_empty() {
+            return Err("Select a printer first".to_owned());
+        }
+        if self.refeed == Refeed::Unknown {
+            return Err("Calibrate the paper refeed orientation first".to_owned());
+        }
+        let layout = match self.layout {
+            Layout::Booklet => ExportLayout::Booklet,
+            Layout::Multiple => ExportLayout::Multiple(self.pages_per_sheet),
+            _ => return Err("Manual duplex requires booklet or N-up layout".to_owned()),
+        };
+        let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let imposed = directory.path().join("imposed.pdf");
+        let fronts = directory.path().join("fronts.pdf");
+        let backs = directory.path().join("backs.pdf");
+        export::export_pdf(&document.path, &imposed, document.pages, layout)?;
+        duplex_export::split_pdf(&imposed, &fronts, &backs, self.back_feed)?;
+        if !backs.is_file() {
+            return Err("No back pages to print".to_owned());
+        }
+        self.duplex_session = Some(ManualDuplexSession {
+            _directory: directory,
+            fronts,
+            backs,
+            printer: self.selected_printer.clone(),
+            fronts_submitted: false,
+            paper_reinserted: false,
+        });
+        Ok(())
+    }
+
+    fn submit_duplex_pass(&mut self, back: bool) -> Result<String, String> {
+        let session = self.duplex_session.as_mut().ok_or("No duplex session")?;
+        if back && (!session.fronts_submitted || !session.paper_reinserted) {
+            return Err("Confirm the front pass and paper refeed first".to_owned());
+        }
+        let pdf = if back { &session.backs } else { &session.fronts };
+        // Avoid forwarding user-selected driver options, which might enable automatic duplex.
+        let result = cups::submit_simplex(&session.printer, pdf)?;
+        if !back {
+            session.fronts_submitted = true;
+        } else {
+            self.duplex_session = None;
+        }
+        Ok(result)
     }
 
     fn render_poster_tile(&mut self, ctx: &egui::Context) -> Result<(), String> {
@@ -565,6 +626,20 @@ impl eframe::App for PrintStudioApp {
                                 duplex::page_range(&plan.backs)
                             ));
                             ui.small(self.language.text("duplex_warning"));
+                            if ui
+                                .add_enabled(
+                                    !self.selected_printer.is_empty()
+                                        && self.refeed != Refeed::Unknown,
+                                    egui::Button::new(self.language.text("duplex_prepare_cups")),
+                                )
+                                .clicked()
+                            {
+                                self.status = match self.prepare_duplex_session() {
+                                    Ok(()) => None,
+                                    Err(error) => Some(error),
+                                };
+                            }
+
                             if ui.button(self.language.text("split_duplex")).clicked() {
                                 if let Some(input) = rfd::FileDialog::new()
                                     .add_filter("PDF", &["pdf"])
@@ -755,6 +830,61 @@ impl eframe::App for PrintStudioApp {
             )
         {
             self.poster_tile_preview = None;
+        }
+
+        if self.duplex_session.is_some() {
+            egui::Window::new(self.language.text("duplex_session"))
+                .collapsible(false)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    if let Some(session) = &mut self.duplex_session {
+                        ui.label(format!(
+                            "{}: {}",
+                            self.language.text("printer"),
+                            session.printer
+                        ));
+                        ui.small(self.language.text("duplex_simplex_notice"));
+                        if session.fronts_submitted {
+                            ui.checkbox(
+                                &mut session.paper_reinserted,
+                                self.language.text("duplex_confirm_refeed"),
+                            );
+                        }
+                    }
+                    let ready = self.duplex_session.as_ref().is_some_and(|session| {
+                        session.fronts_submitted && session.paper_reinserted
+                    });
+                    let fronts_pending = self.duplex_session.as_ref().is_some_and(|session| {
+                        !session.fronts_submitted
+                    });
+                    if ui
+                        .add_enabled(
+                            fronts_pending,
+                            egui::Button::new(self.language.text("duplex_print_fronts")),
+                        )
+                        .clicked()
+                    {
+                        self.status = Some(match self.submit_duplex_pass(false) {
+                            Ok(message) => format!("CUPS: {message}"),
+                            Err(error) => error,
+                        });
+                    }
+                    if ui
+                        .add_enabled(
+                            ready,
+                            egui::Button::new(self.language.text("duplex_print_backs")),
+                        )
+                        .clicked()
+                    {
+                        self.status = Some(match self.submit_duplex_pass(true) {
+                            Ok(message) => format!("CUPS: {message}"),
+                            Err(error) => error,
+                        });
+                    }
+                    if ui.button(self.language.text("cancel")).clicked() {
+                        self.duplex_session = None;
+                    }
+                });
         }
 
         if let Some(job_id) = self.cancel_target.clone() {
