@@ -107,6 +107,7 @@ pub fn export_poster(
     page: usize,
     tiles: usize,
     overlap_mm: f32,
+    crop_marks: bool,
 ) -> Result<(), String> {
     if source == destination
         || ![2, 3, 4].contains(&tiles)
@@ -145,9 +146,12 @@ pub fn export_poster(
         for col in 0..tiles {
             let x = -(col as f32 * step_w);
             let y = -((tiles - 1 - row) as f32 * step_h);
-            let commands = format!(
-                "q 0 0 {paper_w:.3} {paper_h:.3} re W n {poster_w:.3} 0 0 {poster_h:.3} {x:.3} {y:.3} cm /PosterImage Do Q\n"
+            let mut commands = format!(
+                "q 0 0 {paper_w:.3} {paper_h:.3} re W n {poster_w:.3} 0 0 {poster_h:.3} {x:.3} {y:.3} cm /PosterImage Do Q\\n"
             );
+            if crop_marks && overlap > 0.0 {
+                commands.push_str(&poster_crop_marks(row, col, tiles, overlap, paper_w, paper_h));
+            }
             let content_id = pdf.add_object(Stream::new(dictionary! {}, commands.into_bytes()));
             let page_id = pdf.add_object(dictionary! {
                 "Type" => "Page",
@@ -172,6 +176,28 @@ pub fn export_poster(
     pdf.compress();
     pdf.save(destination).map_err(|error| error.to_string())?;
     Ok(())
+}
+
+/// Dashed guides mark the inner edge of the overlap, not the paper edge.
+fn poster_crop_marks(
+    row: usize,
+    col: usize,
+    tiles: usize,
+    overlap: f32,
+    paper_w: f32,
+    paper_h: f32,
+) -> String {
+    let mut marks = String::from("q 0 G 0.5 w [3 3] 0 d\\n");
+    if col + 1 < tiles {
+        let x = paper_w - overlap;
+        marks.push_str(&format!("{x:.3} 0 m {x:.3} {paper_h:.3} l S\\n"));
+    }
+    if row + 1 < tiles {
+        let y = overlap;
+        marks.push_str(&format!("0 {y:.3} m {paper_w:.3} {y:.3} l S\\n"));
+    }
+    marks.push_str("Q\\n");
+    marks
 }
 
 fn grid(side: &SheetSide, booklet: bool) -> (usize, usize) {
