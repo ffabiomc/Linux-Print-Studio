@@ -205,15 +205,17 @@ impl eframe::App for PrintStudioApp {
                             .set_file_name("print-ready.pdf")
                             .save_file()
                         {
-                            self.status = Some(match export::export_pdf(
-                                &document.path,
-                                &path,
-                                document.pages,
-                                layout,
-                            ) {
-                                Ok(()) => format!("PDF saved: {}", path.display()),
-                                Err(error) => format!("PDF export failed: {error}"),
-                            });
+                            self.status = Some(
+                                match export::export_pdf(
+                                    &document.path,
+                                    &path,
+                                    document.pages,
+                                    layout,
+                                ) {
+                                    Ok(()) => format!("PDF saved: {}", path.display()),
+                                    Err(error) => format!("PDF export failed: {error}"),
+                                },
+                            );
                         }
                     }
                 }
