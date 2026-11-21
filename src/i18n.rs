@@ -73,6 +73,8 @@ impl Language {
             (false, "confirm_print") => "Confirm printing",
             (true, "cancel") => "Cancelar",
             (false, "cancel") => "Cancel",
+            (true, "print_layout_warning") => "Livreto e múltiplas páginas geram PDF rasterizado temporário. Confira orientação e frente e verso no teste físico. Pôster ainda indisponível.",
+            (false, "print_layout_warning") => "Booklet and N-up use a temporary rasterized PDF. Verify orientation and duplex with a physical test. Poster is not yet supported.",
             (true, "print_normal_only") => "Somente o PDF original será enviado. Layouts especiais não estão disponíveis para impressão direta.",
             (false, "print_normal_only") => "Only the original PDF will be sent. Special layouts are not available for direct printing.",
             (true, "printer_settings") => "Configurações disponíveis da impressora",
