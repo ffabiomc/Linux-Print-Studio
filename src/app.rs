@@ -539,6 +539,23 @@ impl eframe::App for PrintStudioApp {
                         if let Ok(plan) = duplex::plan_manual_duplex(sides.len(), self.back_feed) {
                             ui.label(format!(
                                 "{}: {}",
+                                self.language.text("duplex_sheet_count"),
+                                duplex::physical_sheet_count(sides.len())
+                            ));
+                            if duplex::final_back_is_blank(sides.len()) {
+                                ui.small(self.language.text("duplex_blank_back"));
+                            }
+                            if self.refeed == Refeed::Unknown {
+                                ui.colored_label(
+                                    egui::Color32::YELLOW,
+                                    self.language.text("duplex_uncalibrated"),
+                                );
+                            }
+                            ui.small(self.language.text("duplex_step_fronts"));
+                            ui.small(self.language.text("duplex_step_refeed"));
+                            ui.small(self.language.text("duplex_step_backs"));
+                            ui.label(format!(
+                                "{}: {}",
                                 self.language.text("front_pass"),
                                 duplex::page_range(&plan.fronts)
                             ));
