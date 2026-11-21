@@ -27,6 +27,7 @@ struct ManualDuplexSession {
     paper_reinserted: bool,
     front_job_id: Option<String>,
     front_queue_status: Option<bool>,
+    front_cancelled: bool,
 }
 
 pub struct PrintStudioApp {
@@ -200,14 +201,20 @@ impl PrintStudioApp {
             paper_reinserted: false,
             front_job_id: None,
             front_queue_status: None,
+            front_cancelled: false,
         });
         Ok(())
     }
 
     fn submit_duplex_pass(&mut self, back: bool) -> Result<String, String> {
         let session = self.duplex_session.as_mut().ok_or("No duplex session")?;
-        if back && (!session.fronts_submitted || !session.paper_reinserted) {
-            return Err("Confirm the front pass and paper refeed first".to_owned());
+        if back
+            && (!session.fronts_submitted
+                || !session.paper_reinserted
+                || session.front_cancelled
+                || session.front_queue_status == Some(true))
+        {
+            return Err("Front pass is pending, cancelled, or not confirmed".to_owned());
         }
         let pdf = if back {
             &session.backs
@@ -866,6 +873,12 @@ impl eframe::App for PrintStudioApp {
                         ));
                         ui.small(self.language.text("duplex_simplex_notice"));
                         if session.fronts_submitted {
+                            if session.front_cancelled {
+                                ui.colored_label(
+                                    egui::Color32::RED,
+                                    self.language.text("duplex_front_cancelled"),
+                                );
+                            }
                             if let Some(id) = &session.front_job_id {
                                 ui.label(format!("CUPS: {id}"));
                             }
@@ -876,9 +889,15 @@ impl eframe::App for PrintStudioApp {
                                     "duplex_front_not_in_queue"
                                 }));
                             }
-                            ui.checkbox(
-                                &mut session.paper_reinserted,
-                                self.language.text("duplex_confirm_refeed"),
+                            ui.add_enabled_ui(
+                                !session.front_cancelled
+                                    && session.front_queue_status != Some(true),
+                                |ui| {
+                                    ui.checkbox(
+                                        &mut session.paper_reinserted,
+                                        self.language.text("duplex_confirm_refeed"),
+                                    );
+                                },
                             );
                         }
                     }
@@ -899,7 +918,10 @@ impl eframe::App for PrintStudioApp {
                         };
                     }
                     let ready = self.duplex_session.as_ref().is_some_and(|session| {
-                        session.fronts_submitted && session.paper_reinserted
+                        session.fronts_submitted
+                            && session.paper_reinserted
+                            && !session.front_cancelled
+                            && session.front_queue_status != Some(true)
                     });
                     let fronts_pending = self
                         .duplex_session
@@ -954,6 +976,16 @@ impl eframe::App for PrintStudioApp {
                                 Some(match cups::cancel_job(&self.selected_printer, &job_id) {
                                     Ok(()) => {
                                         self.queue_jobs.retain(|job| job.id != job_id);
+                                        if let Some(session) = &mut self.duplex_session {
+                                            if session.printer == self.selected_printer
+                                                && session.front_job_id.as_deref()
+                                                    == Some(job_id.as_str())
+                                            {
+                                                session.front_cancelled = true;
+                                                session.paper_reinserted = false;
+                                                session.front_queue_status = None;
+                                            }
+                                        }
                                         self.language.text("job_cancelled").to_owned()
                                     }
                                     Err(error) => error,
