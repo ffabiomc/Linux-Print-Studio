@@ -141,3 +141,7 @@ GitHub Actions → **Linux packages** → **Run workflow** builds an amd64 Debia
 For Debian/Ubuntu, install the `.deb` using `sudo apt install ./linux-print-studio_<version>_amd64.deb` (replace `<version>` with the actual filename). For the AppImage, run `chmod +x Linux-Print-Studio-x86_64.AppImage` and then `./Linux-Print-Studio-x86_64.AppImage`. The AppImage currently packages the app executable and launcher but **does not bundle every shared library**: compatibility with other distributions is not yet guaranteed. Both formats still depend on system CUPS and Poppler command-line tools. On Debian/Ubuntu, install `cups-client` and `poppler-utils` if needed.
 
 **Release gate:** verify the workflow actually produces both artifacts and test installation, startup, PDF preview, and printing on real Linux machines before publishing a stable 1.0 release. These packages are pre-release builds, not validated release binaries.
+
+## RPM packaging (experimental)
+
+The **Linux packages** workflow also builds an x86_64 `.rpm` with `rpmbuild`, placing it alongside the Debian package and AppImage in the workflow artifact. RPM shared-library dependencies are detected from the Ubuntu-built binary, so **installation compatibility with Fedora, Rocky Linux, AlmaLinux and openSUSE has not yet been validated**. Test the RPM in a clean target distribution before relying on it; some distributions may need a native RPM build and adjusted dependency names. The package uses system CUPS and Poppler tools.
