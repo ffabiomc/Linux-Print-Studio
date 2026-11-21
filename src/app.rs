@@ -831,7 +831,10 @@ impl eframe::App for PrintStudioApp {
                         {
                             self.poster_tile_preview = None;
                         }
-                        if ui.button(self.language.text("poster_render_tile")).clicked() {
+                        if ui
+                            .button(self.language.text("poster_render_tile"))
+                            .clicked()
+                        {
                             self.status = match self.render_poster_tile(ctx) {
                                 Ok(()) => None,
                                 Err(error) => Some(error),
