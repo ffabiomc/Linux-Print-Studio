@@ -6,7 +6,9 @@ pub struct PrintStudioApp {
 
 impl Default for PrintStudioApp {
     fn default() -> Self {
-        Self { language: Language::Auto }
+        Self {
+            language: Language::Auto,
+        }
     }
 }
 
@@ -20,7 +22,11 @@ impl eframe::App for PrintStudioApp {
                 egui::ComboBox::from_id_salt("language")
                     .selected_text(self.language.label())
                     .show_ui(ui, |ui| {
-                        for language in [Language::Auto, Language::English, Language::PortugueseBrazil] {
+                        for language in [
+                            Language::Auto,
+                            Language::English,
+                            Language::PortugueseBrazil,
+                        ] {
                             ui.selectable_value(&mut self.language, language, language.label());
                         }
                     });
