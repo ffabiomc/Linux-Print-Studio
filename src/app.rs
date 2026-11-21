@@ -1,5 +1,6 @@
 use crate::document::PdfDocument;
 use crate::i18n::Language;
+use crate::preview;
 use eframe::egui;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,6 +19,8 @@ pub struct PrintStudioApp {
     layout: Layout,
     copies: u32,
     status: Option<String>,
+    preview: Option<egui::TextureHandle>,
+    preview_page: usize,
 }
 
 impl Default for PrintStudioApp {
@@ -30,6 +33,8 @@ impl Default for PrintStudioApp {
             layout: Layout::Normal,
             copies: 1,
             status: None,
+            preview: None,
+            preview_page: 0,
         }
     }
 }
@@ -41,8 +46,31 @@ impl PrintStudioApp {
                 self.page = 1;
                 self.status = None;
                 self.document = Some(document);
+                self.preview = None;
+                self.preview_page = 0;
             }
             Err(error) => self.status = Some(error),
+        }
+    }
+
+    fn refresh_preview(&mut self, ctx: &egui::Context) {
+        if self.preview_page == self.page {
+            return;
+        }
+        self.preview = None;
+        self.preview_page = self.page;
+        if let Some(document) = &self.document {
+            match preview::render_page(&document.path, self.page) {
+                Ok(image) => {
+                    self.preview = Some(ctx.load_texture(
+                        "pdf-page",
+                        image,
+                        egui::TextureOptions::LINEAR,
+                    ));
+                    self.status = None;
+                }
+                Err(error) => self.status = Some(error),
+            }
         }
     }
 }
@@ -89,6 +117,14 @@ impl eframe::App for PrintStudioApp {
             .min_width(245.0)
             .show(ctx, |ui| {
                 ui.heading(self.language.text("document"));
+                if ui.button(self.language.text("open")).clicked() {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .add_filter("PDF", &["pdf"])
+                        .pick_file()
+                    {
+                        self.open_document(&path);
+                    }
+                }
                 ui.label(self.language.text("drop"));
                 if let Some(document) = &self.document {
                     ui.label(document.path.display().to_string());
@@ -117,6 +153,7 @@ impl eframe::App for PrintStudioApp {
                 ui.add_enabled(false, egui::Button::new(self.language.text("print")));
             });
 
+        self.refresh_preview(ctx);
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading(self.language.text("preview"));
             if let Some(document) = &self.document {
@@ -131,7 +168,16 @@ impl eframe::App for PrintStudioApp {
                     }
                 });
                 ui.separator();
-                ui.label(self.language.text("preview_pending"));
+                if let Some(texture) = &self.preview {
+                    egui::ScrollArea::both().show(ui, |ui| {
+                        let available = ui.available_width().max(1.0);
+                        let size = texture.size_vec2();
+                        let scale = (available / size.x).min(1.0);
+                        ui.image((texture.id(), size * scale));
+                    });
+                } else {
+                    ui.label(self.language.text("preview_pending"));
+                }
             } else {
                 ui.label(self.language.text("drop"));
             }
