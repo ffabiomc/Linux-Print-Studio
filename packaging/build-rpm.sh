@@ -16,7 +16,6 @@ Summary: Linux desktop PDF print preparation and CUPS printing
 License: LicenseRef-Not-Specified
 URL: https://github.com/ffabiomc/Linux-Print-Studio
 BuildArch: x86_64
-AutoReqProv: no
 Requires: cups-client
 Requires: poppler-utils
 
