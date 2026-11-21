@@ -253,7 +253,7 @@ mod tests {
     #[test]
     fn parses_queue_for_selected_printer() {
         let jobs = parse_jobs(
-            "Office-12 user 1024 Sat\\nOther-4 user 2048 Sat\\nOffice-13 user 512 Sat\\n",
+            "Office-12 user 1024 Sat\nOther-4 user 2048 Sat\nOffice-13 user 512 Sat\n",
             "Office",
         );
         assert_eq!(jobs.len(), 2);
@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn ignores_invalid_job_identifiers() {
-        assert!(parse_jobs("Office-abc user\\nOffice-12x user\\n", "Office").is_empty());
+        assert!(parse_jobs("Office-abc user\nOffice-12x user\n", "Office").is_empty());
     }
 
     #[test]
