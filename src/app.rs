@@ -1,5 +1,5 @@
 use crate::calibration;
-use crate::cups::{self, Printers};
+use crate::cups::{self, PrinterDetails, Printers};
 use crate::document::PdfDocument;
 use crate::duplex::{self, FeedOrder};
 use crate::duplex_export;
@@ -33,6 +33,7 @@ pub struct PrintStudioApp {
     cups_printers: Option<Printers>,
     selected_printer: String,
     cups_error: Option<String>,
+    printer_details: Option<PrinterDetails>,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -57,6 +58,7 @@ impl Default for PrintStudioApp {
             cups_printers: None,
             selected_printer: String::new(),
             cups_error: None,
+            printer_details: None,
             status: None,
             preview: None,
             preview_page: 0,
@@ -402,6 +404,7 @@ impl eframe::App for PrintStudioApp {
                 ui.separator();
                 ui.heading(self.language.text("printer"));
                 if ui.button(self.language.text("refresh_printers")).clicked() {
+                    self.printer_details = None;
                     match cups::discover() {
                         Ok(printers) => {
                             if !printers.names.contains(&self.selected_printer) {
@@ -425,11 +428,16 @@ impl eframe::App for PrintStudioApp {
                             .selected_text(&self.selected_printer)
                             .show_ui(ui, |ui| {
                                 for name in &printers.names {
-                                    ui.selectable_value(
-                                        &mut self.selected_printer,
-                                        name.clone(),
-                                        name,
-                                    );
+                                    if ui
+                                        .selectable_value(
+                                            &mut self.selected_printer,
+                                            name.clone(),
+                                            name,
+                                        )
+                                        .changed()
+                                    {
+                                        self.printer_details = None;
+                                    }
                                 }
                             });
                         if printers.default.as_ref() == Some(&self.selected_printer) {
@@ -439,6 +447,30 @@ impl eframe::App for PrintStudioApp {
                 }
                 if let Some(error) = &self.cups_error {
                     ui.small(error);
+                }
+                if !self.selected_printer.is_empty()
+                    && ui.button(self.language.text("printer_details")).clicked()
+                {
+                    match cups::details(&self.selected_printer) {
+                        Ok(details) => {
+                            self.printer_details = Some(details);
+                            self.cups_error = None;
+                        }
+                        Err(error) => {
+                            self.printer_details = None;
+                            self.cups_error = Some(error);
+                        }
+                    }
+                }
+                if let Some(details) = &self.printer_details {
+                    ui.label(&details.status);
+                    ui.collapsing(self.language.text("printer_options"), |ui| {
+                        egui::ScrollArea::vertical().max_height(170.0).show(ui, |ui| {
+                            for option in &details.options {
+                                ui.small(option);
+                            }
+                        });
+                    });
                 }
                 ui.label(self.language.text("not_ready"));
                 ui.add_enabled(false, egui::Button::new(self.language.text("print")));
