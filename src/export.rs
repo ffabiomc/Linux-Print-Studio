@@ -150,7 +150,9 @@ pub fn export_poster(
                 "q 0 0 {paper_w:.3} {paper_h:.3} re W n {poster_w:.3} 0 0 {poster_h:.3} {x:.3} {y:.3} cm /PosterImage Do Q\n"
             );
             if crop_marks && overlap > 0.0 {
-                commands.push_str(&poster_crop_marks(row, col, tiles, overlap, paper_w, paper_h));
+                commands.push_str(&poster_crop_marks(
+                    row, col, tiles, overlap, paper_w, paper_h,
+                ));
             }
             let content_id = pdf.add_object(Stream::new(dictionary! {}, commands.into_bytes()));
             let page_id = pdf.add_object(dictionary! {
