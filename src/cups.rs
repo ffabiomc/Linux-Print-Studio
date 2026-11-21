@@ -111,6 +111,34 @@ pub fn details(printer: &str) -> Result<PrinterDetails, String> {
     })
 }
 
+/// Submit one manual-duplex pass, explicitly disabling driver-side duplex.
+pub fn submit_simplex(printer: &str, pdf: &Path) -> Result<String, String> {
+    if printer.is_empty() || printer.starts_with('-') || printer.chars().any(char::is_control) {
+        return Err("Invalid printer name".to_owned());
+    }
+    if !pdf.is_file() || pdf.extension().and_then(|value| value.to_str()) != Some("pdf") {
+        return Err("A valid PDF is required".to_owned());
+    }
+    let output = Command::new("lp")
+        .arg("-d")
+        .arg(printer)
+        .arg("-n")
+        .arg("1")
+        .arg("-o")
+        .arg("sides=one-sided")
+        .arg("--")
+        .arg(pdf)
+        .output()
+        .map_err(|error| format!("Cannot run lp: {error}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "CUPS rejected job: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
+}
+
 /// Submit a PDF to CUPS only after the user confirms the job.
 pub fn submit(
     printer: &str,
