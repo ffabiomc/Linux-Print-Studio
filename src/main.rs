@@ -1,5 +1,6 @@
 mod app;
 mod calibration;
+mod cups;
 mod document;
 mod duplex;
 mod duplex_export;
