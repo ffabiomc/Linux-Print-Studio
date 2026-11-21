@@ -139,13 +139,13 @@ mod tests {
 
     #[test]
     fn reads_legacy_profiles() {
-        let old = parse("same\\tOld printer\\n").unwrap();
+        let old = parse("same\tOld printer\n").unwrap();
         assert_eq!(old[0].refeed, Refeed::Unknown);
     }
 
     #[test]
     fn rejects_unknown_refeed() {
-        assert!(parse("same\\tPrinter\\tinvalid\\n").is_err());
+        assert!(parse("same\tPrinter\tinvalid\n").is_err());
     }
 
     #[test]
