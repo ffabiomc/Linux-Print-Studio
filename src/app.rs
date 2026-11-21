@@ -269,21 +269,29 @@ impl eframe::App for PrintStudioApp {
                                         let stem = base.with_extension("");
                                         let front = stem.with_file_name(format!(
                                             "{}-fronts.pdf",
-                                            stem.file_name().and_then(|name| name.to_str()).unwrap_or("duplex")
+                                            stem.file_name()
+                                                .and_then(|name| name.to_str())
+                                                .unwrap_or("duplex")
                                         ));
                                         let back = stem.with_file_name(format!(
                                             "{}-backs.pdf",
-                                            stem.file_name().unwrap_or_default().to_string_lossy()
+                                            stem.file_name()
+                                                .and_then(|name| name.to_str())
+                                                .unwrap_or("duplex")
                                         ));
-                                        self.status = Some(match duplex_export::split_pdf(
-                                            &input,
-                                            &front,
-                                            &back,
-                                            self.back_feed,
-                                        ) {
-                                            Ok(()) => self.language.text("split_success").to_owned(),
-                                            Err(error) => format!("PDF split failed: {error}"),
-                                        });
+                                        self.status = Some(
+                                            match duplex_export::split_pdf(
+                                                &input,
+                                                &front,
+                                                &back,
+                                                self.back_feed,
+                                            ) {
+                                                Ok(()) => {
+                                                    self.language.text("split_success").to_owned()
+                                                }
+                                                Err(error) => format!("PDF split failed: {error}"),
+                                            },
+                                        );
                                     }
                                 }
                             }
