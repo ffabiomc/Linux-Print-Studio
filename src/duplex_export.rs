@@ -24,10 +24,7 @@ pub fn split_pdf(
     let plan = plan_manual_duplex(count, order).map_err(str::to_owned)?;
     let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
     let pattern = temporary.path().join("page-%d.pdf");
-    run(
-        "pdfseparate",
-        &[source.to_path_buf(), pattern],
-    )?;
+    run("pdfseparate", &[source.to_path_buf(), pattern])?;
     let front_temp = temporary.path().join("front-pass.pdf");
     let back_temp = temporary.path().join("back-pass.pdf");
     merge(temporary.path(), &plan.fronts, &front_temp)?;
