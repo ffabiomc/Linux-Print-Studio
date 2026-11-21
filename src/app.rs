@@ -25,6 +25,8 @@ struct ManualDuplexSession {
     printer: String,
     fronts_submitted: bool,
     paper_reinserted: bool,
+    front_job_id: Option<String>,
+    front_queue_status: Option<bool>,
 }
 
 pub struct PrintStudioApp {
@@ -196,6 +198,8 @@ impl PrintStudioApp {
             printer: self.selected_printer.clone(),
             fronts_submitted: false,
             paper_reinserted: false,
+            front_job_id: None,
+            front_queue_status: None,
         });
         Ok(())
     }
@@ -213,11 +217,24 @@ impl PrintStudioApp {
         // Avoid forwarding user-selected driver options, which might enable automatic duplex.
         let result = cups::submit_simplex(&session.printer, pdf)?;
         if !back {
+            session.front_job_id = cups::submitted_job_id(&result, &session.printer);
+            session.front_queue_status = None;
             session.fronts_submitted = true;
         } else {
             self.duplex_session = None;
         }
         Ok(result)
+    }
+
+    fn refresh_duplex_front_queue(&mut self) -> Result<(), String> {
+        let session = self.duplex_session.as_mut().ok_or("No duplex session")?;
+        let job_id = session
+            .front_job_id
+            .as_ref()
+            .ok_or("CUPS did not provide a recognizable front job ID")?;
+        let jobs = cups::jobs(&session.printer)?;
+        session.front_queue_status = Some(jobs.iter().any(|job| &job.id == job_id));
+        Ok(())
     }
 
     fn render_poster_tile(&mut self, ctx: &egui::Context) -> Result<(), String> {
@@ -849,11 +866,37 @@ impl eframe::App for PrintStudioApp {
                         ));
                         ui.small(self.language.text("duplex_simplex_notice"));
                         if session.fronts_submitted {
+                            if let Some(id) = &session.front_job_id {
+                                ui.label(format!("CUPS: {id}"));
+                            }
+                            if let Some(pending) = session.front_queue_status {
+                                ui.small(self.language.text(if pending {
+                                    "duplex_front_in_queue"
+                                } else {
+                                    "duplex_front_not_in_queue"
+                                }));
+                            }
                             ui.checkbox(
                                 &mut session.paper_reinserted,
                                 self.language.text("duplex_confirm_refeed"),
                             );
                         }
+                    }
+                    let can_refresh = self
+                        .duplex_session
+                        .as_ref()
+                        .is_some_and(|session| session.front_job_id.is_some());
+                    if ui
+                        .add_enabled(
+                            can_refresh,
+                            egui::Button::new(self.language.text("duplex_refresh_front")),
+                        )
+                        .clicked()
+                    {
+                        self.status = match self.refresh_duplex_front_queue() {
+                            Ok(()) => None,
+                            Err(error) => Some(error),
+                        };
                     }
                     let ready = self.duplex_session.as_ref().is_some_and(|session| {
                         session.fronts_submitted && session.paper_reinserted
