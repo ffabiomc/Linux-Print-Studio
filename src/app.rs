@@ -205,7 +205,11 @@ impl PrintStudioApp {
         if back && (!session.fronts_submitted || !session.paper_reinserted) {
             return Err("Confirm the front pass and paper refeed first".to_owned());
         }
-        let pdf = if back { &session.backs } else { &session.fronts };
+        let pdf = if back {
+            &session.backs
+        } else {
+            &session.fronts
+        };
         // Avoid forwarding user-selected driver options, which might enable automatic duplex.
         let result = cups::submit_simplex(&session.printer, pdf)?;
         if !back {
@@ -854,9 +858,10 @@ impl eframe::App for PrintStudioApp {
                     let ready = self.duplex_session.as_ref().is_some_and(|session| {
                         session.fronts_submitted && session.paper_reinserted
                     });
-                    let fronts_pending = self.duplex_session.as_ref().is_some_and(|session| {
-                        !session.fronts_submitted
-                    });
+                    let fronts_pending = self
+                        .duplex_session
+                        .as_ref()
+                        .is_some_and(|session| !session.fronts_submitted);
                     if ui
                         .add_enabled(
                             fronts_pending,
