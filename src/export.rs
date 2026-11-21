@@ -108,7 +108,12 @@ pub fn export_poster(
     tiles: usize,
     overlap_mm: f32,
 ) -> Result<(), String> {
-    if source == destination || ![2, 3, 4].contains(&tiles) || page == 0 || !overlap_mm.is_finite() || !(0.0..=20.0).contains(&overlap_mm) {
+    if source == destination
+        || ![2, 3, 4].contains(&tiles)
+        || page == 0
+        || !overlap_mm.is_finite()
+        || !(0.0..=20.0).contains(&overlap_mm)
+    {
         return Err("Invalid poster settings".to_owned());
     }
     // A4 output; PDF coordinates are in points (72 points per inch).
