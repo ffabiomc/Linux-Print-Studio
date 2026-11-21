@@ -102,6 +102,10 @@ impl Default for PrintStudioApp {
 
 impl PrintStudioApp {
     fn open_document(&mut self, path: &std::path::Path) {
+        if self.duplex_session.is_some() {
+            self.status = Some(self.language.text("duplex_active_document").to_owned());
+            return;
+        }
         match PdfDocument::open(path) {
             Ok(document) => {
                 self.page = 1;
@@ -253,8 +257,18 @@ impl PrintStudioApp {
             .front_job_id
             .as_ref()
             .ok_or("CUPS did not provide a recognizable front job ID")?;
-        let jobs = cups::jobs(&session.printer)?;
+        let jobs = match cups::jobs(&session.printer) {
+            Ok(jobs) => jobs,
+            Err(error) => {
+                session.front_queue_status = None;
+                session.paper_reinserted = false;
+                return Err(error);
+            }
+        };
         session.front_queue_status = Some(jobs.iter().any(|job| &job.id == job_id));
+        if session.front_queue_status == Some(true) {
+            session.paper_reinserted = false;
+        }
         Ok(())
     }
 
