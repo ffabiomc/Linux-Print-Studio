@@ -1,5 +1,6 @@
 use crate::document::PdfDocument;
 use crate::duplex::{self, FeedOrder};
+use crate::duplex_export;
 use crate::export::{self, ExportLayout};
 use crate::i18n::Language;
 use crate::imposition;
@@ -255,6 +256,37 @@ impl eframe::App for PrintStudioApp {
                                 duplex::page_range(&plan.backs)
                             ));
                             ui.small(self.language.text("duplex_warning"));
+                            if ui.button(self.language.text("split_duplex")).clicked() {
+                                if let Some(input) = rfd::FileDialog::new()
+                                    .add_filter("PDF", &["pdf"])
+                                    .pick_file()
+                                {
+                                    if let Some(base) = rfd::FileDialog::new()
+                                        .add_filter("PDF", &["pdf"])
+                                        .set_file_name("duplex.pdf")
+                                        .save_file()
+                                    {
+                                        let stem = base.with_extension("");
+                                        let front = stem.with_file_name(format!(
+                                            "{}-fronts.pdf",
+                                            stem.file_name().unwrap_or_default().to_string_lossy()
+                                        ));
+                                        let back = stem.with_file_name(format!(
+                                            "{}-backs.pdf",
+                                            stem.file_name().unwrap_or_default().to_string_lossy()
+                                        ));
+                                        self.status = Some(match duplex_export::split_pdf(
+                                            &input,
+                                            &front,
+                                            &back,
+                                            self.back_feed,
+                                        ) {
+                                            Ok(()) => self.language.text("split_success").to_owned(),
+                                            Err(error) => format!("PDF split failed: {error}"),
+                                        });
+                                    }
+                                }
+                            }
                         }
                     }
                 }
