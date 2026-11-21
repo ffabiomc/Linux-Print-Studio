@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Linux Print Studio
+Comment=Prepare and print PDF documents using CUPS
+Exec=linux-print-studio
+Icon=linux-print-studio
+Terminal=false
+Categories=Graphics;Office;Printing;
+StartupNotify=true
