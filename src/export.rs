@@ -101,7 +101,6 @@ pub fn export_pdf(
     Ok(())
 }
 
-
 pub fn export_poster(
     source: &Path,
     destination: &Path,
