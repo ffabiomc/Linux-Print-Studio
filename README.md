@@ -95,3 +95,9 @@ After selecting a discovered printer, click **Check printer status and capabilit
 ## CUPS driver option selectors (experimental)
 
 After **Check printer status and capabilities**, expand **Available printer settings** to select among the choices exposed by `lpoptions -l`. Defaults marked with an asterisk are preselected. These selections are in-memory only; switching printers or refreshing the list clears them. They do **not** change system printer defaults or submit a job. Some CUPS/IPP drivers expose differently formatted or incomplete option descriptions; those lines remain visible in the raw options section but may not produce selectors. Printing remains disabled.
+
+## Direct PDF printing through CUPS (experimental)
+
+With a PDF loaded, a discovered printer selected, and **Normal** layout active, click **Print** to review the document path, printer, copies, and selected CUPS options. Nothing is sent until you click **Confirm printing**. Submission uses the local `lp` utility and reports its output or error. Install the CUPS client tools (`lp`, `lpstat`, and `lpoptions`) and ensure the printer is configured and reachable.
+
+**Important:** this sends the **original PDF** only; booklet, poster, and N-up layouts are not yet connected to direct printing. The command runs synchronously and may briefly block the interface. A successful `lp` response means the job was accepted by the spooler, **not** that physical printing completed. Test with a small document first.
