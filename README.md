@@ -133,3 +133,11 @@ When the user cancels the tracked front job through the application's queue dial
 ## Pre-release functional testing
 
 Run `bash scripts/check-print-environment.sh` to verify that CUPS client and Poppler commands are installed and to inspect available printer destinations **without sending any jobs**. Follow [the functional acceptance checklist](docs/functional-test-plan.md) for real-printer tests covering normal printing, booklet, N-up, poster 2×1 and 1×2, manual duplex, cancellation, failure handling, and UI navigation. These cases are not considered passed until physically executed and recorded. Rust CI does not validate printer hardware.
+
+## Linux packaging (pre-release)
+
+GitHub Actions → **Linux packages** → **Run workflow** builds an amd64 Debian package and an x86_64 AppImage. Download the `linux-print-studio-linux-x86_64` artifact from the completed run. A tag starting with `v` also triggers this workflow. The workflow compiles on Ubuntu 22.04 and packages the executable, desktop launcher, and SVG icon.
+
+For Debian/Ubuntu, install the `.deb` using `sudo apt install ./linux-print-studio_<version>_amd64.deb` (replace `<version>` with the actual filename). For the AppImage, run `chmod +x Linux-Print-Studio-x86_64.AppImage` and then `./Linux-Print-Studio-x86_64.AppImage`. The AppImage currently packages the app executable and launcher but **does not bundle every shared library**: compatibility with other distributions is not yet guaranteed. Both formats still depend on system CUPS and Poppler command-line tools. On Debian/Ubuntu, install `cups-client` and `poppler-utils` if needed.
+
+**Release gate:** verify the workflow actually produces both artifacts and test installation, startup, PDF preview, and printing on real Linux machines before publishing a stable 1.0 release. These packages are pre-release builds, not validated release binaries.
