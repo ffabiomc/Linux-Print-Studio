@@ -822,10 +822,15 @@ impl eframe::App for PrintStudioApp {
                     self.poster_selected_tile = self.poster_selected_tile.clamp(1, total);
                     ui.horizontal(|ui| {
                         ui.label(self.language.text("poster_select_tile"));
-                        ui.add(
-                            egui::DragValue::new(&mut self.poster_selected_tile)
-                                .range(1..=total),
-                        );
+                        if ui
+                            .add(
+                                egui::DragValue::new(&mut self.poster_selected_tile)
+                                    .range(1..=total),
+                            )
+                            .changed()
+                        {
+                            self.poster_tile_preview = None;
+                        }
                         if ui.button(self.language.text("poster_render_tile")).clicked() {
                             self.status = match self.render_poster_tile(ctx) {
                                 Ok(()) => None,
