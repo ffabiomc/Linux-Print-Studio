@@ -35,7 +35,10 @@ fn parse(contents: &str) -> Result<Vec<PrinterProfile>, String> {
             _ => return Err("Invalid back-side order".to_owned()),
         };
         validate_name(name)?;
-        if profiles.iter().any(|profile: &PrinterProfile| profile.name == name) {
+        if profiles
+            .iter()
+            .any(|profile: &PrinterProfile| profile.name == name)
+        {
             return Err("Duplicate printer profile".to_owned());
         }
         profiles.push(PrinterProfile {
