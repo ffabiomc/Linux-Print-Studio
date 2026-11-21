@@ -57,6 +57,8 @@ impl Language {
             (false, "printer") => "Printer",
             (true, "layout") => "Layout",
             (false, "layout") => "Layout",
+            (true, "open") => "Abrir PDF...",
+            (false, "open") => "Open PDF...",
             (true, "drop") => "Arraste um PDF para esta janela",
             (false, "drop") => "Drop a PDF onto this window",
             (true, "pages") => "Páginas",
