@@ -1,4 +1,6 @@
 //! Read-only CUPS printer discovery using the standard lpstat command.
+use std::collections::BTreeMap;
+use std::path::Path;
 use std::process::Command;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,6 +109,49 @@ pub fn details(printer: &str) -> Result<PrinterDetails, String> {
         options,
         choices,
     })
+}
+
+
+/// Submit a PDF to CUPS only after the user confirms the job.
+pub fn submit(
+    printer: &str,
+    pdf: &Path,
+    copies: u32,
+    choices: &[PrinterOption],
+    selected: &BTreeMap<String, String>,
+) -> Result<String, String> {
+    if printer.is_empty() || printer.starts_with('-') || printer.chars().any(char::is_control) {
+        return Err("Invalid printer name".to_owned());
+    }
+    if !pdf.is_file() || pdf.extension().and_then(|value| value.to_str()) != Some("pdf") {
+        return Err("A valid PDF is required".to_owned());
+    }
+    if !(1..=999).contains(&copies) {
+        return Err("Invalid copy count".to_owned());
+    }
+    let mut command = Command::new("lp");
+    command.arg("-d").arg(printer).arg("-n").arg(copies.to_string());
+    for (key, value) in selected {
+        if !choices
+            .iter()
+            .any(|option| option.key == *key && option.values.contains(value))
+        {
+            return Err("Unsupported printer option".to_owned());
+        }
+        command.arg("-o").arg(format!("{key}={value}"));
+    }
+    let output = command
+        .arg("--")
+        .arg(pdf)
+        .output()
+        .map_err(|error| format!("Cannot run lp: {error}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "CUPS rejected job: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
 }
 
 fn parse_names(output: &str) -> Vec<String> {
