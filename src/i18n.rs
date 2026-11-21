@@ -44,26 +44,44 @@ impl Language {
         }
     }
 
-    pub fn text(self, key: &'static str) -> &'static str {
+    pub fn text(self, key: &str) -> &'static str {
         let pt = self.resolved() == Self::PortugueseBrazil;
         match (pt, key) {
             (true, "subtitle") => "Gerenciador de impressão para Linux",
             (false, "subtitle") => "Print manager for Linux",
             (true, "language") => "Idioma",
             (false, "language") => "Language",
-            (true, "document") => "Documento",
-            (false, "document") => "Document",
+            (true, "document") => "Documento PDF",
+            (false, "document") => "PDF document",
             (true, "printer") => "Impressora",
             (false, "printer") => "Printer",
             (true, "layout") => "Layout",
             (false, "layout") => "Layout",
-            (true, "status") => "Estrutura inicial: impressão ainda não implementada.",
-            (false, "status") => "Initial scaffold: printing is not implemented yet.",
-            (true, "open") => "Abrir PDF (em breve)",
-            (false, "open") => "Open PDF (coming soon)",
+            (true, "drop") => "Arraste um PDF para esta janela",
+            (false, "drop") => "Drop a PDF onto this window",
+            (true, "pages") => "Páginas",
+            (false, "pages") => "Pages",
+            (true, "copies") => "Cópias",
+            (false, "copies") => "Copies",
+            (true, "dark") => "Tema escuro",
+            (false, "dark") => "Dark theme",
+            (true, "normal") => "Normal",
+            (false, "normal") => "Normal",
+            (true, "booklet") => "Livreto",
+            (false, "booklet") => "Booklet",
+            (true, "poster") => "Pôster",
+            (false, "poster") => "Poster",
+            (true, "multiple") => "Múltiplas páginas",
+            (false, "multiple") => "Multiple pages",
+            (true, "preview") => "Pré-visualização",
+            (false, "preview") => "Preview",
+            (true, "preview_pending") => "PDF carregado. Renderização visual em desenvolvimento.",
+            (false, "preview_pending") => "PDF loaded. Visual rendering is under development.",
+            (true, "not_ready") => "Integração CUPS ainda não disponível.",
+            (false, "not_ready") => "CUPS integration is not available yet.",
             (true, "print") => "Imprimir (em breve)",
             (false, "print") => "Print (coming soon)",
-            _ => key,
+            _ => "Unknown translation",
         }
     }
 }
