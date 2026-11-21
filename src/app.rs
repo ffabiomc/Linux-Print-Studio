@@ -173,7 +173,9 @@ impl eframe::App for PrintStudioApp {
                                         let pages = side
                                             .slots
                                             .iter()
-                                            .map(|page| page.map_or("-".to_owned(), |n| n.to_string()))
+                                            .map(|page| {
+                                                page.map_or("-".to_owned(), |n| n.to_string())
+                                            })
                                             .collect::<Vec<_>>()
                                             .join(" | ");
                                         ui.label(format!("{}: {}", index + 1, pages));
