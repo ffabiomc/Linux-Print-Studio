@@ -238,6 +238,13 @@ impl eframe::App for PrintStudioApp {
             });
         });
 
+        let poster_settings_before = (
+            self.poster_columns,
+            self.poster_rows,
+            self.poster_overlap_mm,
+            self.poster_crop_marks,
+            self.page,
+        );
         egui::SidePanel::left("settings")
             .min_width(245.0)
             .show(ctx, |ui| {
@@ -721,6 +728,18 @@ impl eframe::App for PrintStudioApp {
                 }
             });
 
+        if poster_settings_before
+            != (
+                self.poster_columns,
+                self.poster_rows,
+                self.poster_overlap_mm,
+                self.poster_crop_marks,
+                self.page,
+            )
+        {
+            self.poster_tile_preview = None;
+        }
+
         if let Some(job_id) = self.cancel_target.clone() {
             egui::Window::new(self.language.text("confirm_cancel_job"))
                 .collapsible(false)
@@ -790,10 +809,12 @@ impl eframe::App for PrintStudioApp {
                 ui.horizontal(|ui| {
                     if ui.button("◀").clicked() && self.page > 1 {
                         self.page -= 1;
+                        self.poster_tile_preview = None;
                     }
                     ui.label(format!("{} / {}", self.page, pages));
                     if ui.button("▶").clicked() && self.page < pages {
                         self.page += 1;
+                        self.poster_tile_preview = None;
                     }
                 });
                 if self.layout == Layout::Poster {
