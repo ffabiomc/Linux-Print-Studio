@@ -88,6 +88,45 @@ impl PrintStudioApp {
         }
     }
 
+    fn submit_current_document(&self) -> Result<String, String> {
+        let document = self.document.as_ref().ok_or("No PDF selected")?;
+        let choices = self
+            .printer_details
+            .as_ref()
+            .map(|details| details.choices.as_slice())
+            .unwrap_or(&[]);
+        let temporary = match self.layout {
+            Layout::Normal => None,
+            Layout::Booklet | Layout::Multiple => {
+                let layout = match self.layout {
+                    Layout::Booklet => ExportLayout::Booklet,
+                    Layout::Multiple => ExportLayout::Multiple(self.pages_per_sheet),
+                    _ => unreachable!(),
+                };
+                let file = tempfile::Builder::new()
+                    .prefix("linux-print-studio-")
+                    .suffix(".pdf")
+                    .tempfile()
+                    .map_err(|error| error.to_string())?;
+                export::export_pdf(&document.path, file.path(), document.pages, layout)?;
+                Some(file)
+            }
+            Layout::Poster => {
+                return Err("Poster printing is not implemented yet".to_owned());
+            }
+        };
+        let pdf = temporary
+            .as_ref()
+            .map_or(document.path.as_path(), |file| file.path());
+        cups::submit(
+            &self.selected_printer,
+            pdf,
+            self.copies,
+            choices,
+            &self.selected_options,
+        )
+    }
+
     fn refresh_preview(&mut self, ctx: &egui::Context) {
         if self.preview_page == self.page {
             return;
@@ -537,7 +576,7 @@ impl eframe::App for PrintStudioApp {
                 ui.label(self.language.text("not_ready"));
                 let can_print = self.document.is_some()
                     && !self.selected_printer.is_empty()
-                    && self.layout == Layout::Normal;
+                    && self.layout != Layout::Poster;
                 if ui
                     .add_enabled(can_print, egui::Button::new(self.language.text("print")))
                     .clicked()
@@ -591,32 +630,17 @@ impl eframe::App for PrintStudioApp {
                     for (key, value) in &self.selected_options {
                         ui.label(format!("{key}: {value}"));
                     }
-                    ui.small(self.language.text("print_normal_only"));
+                    ui.small(self.language.text("print_layout_warning"));
                     ui.horizontal(|ui| {
                         if ui.button(self.language.text("cancel")).clicked() {
                             self.confirm_print = false;
                         }
                         if ui.button(self.language.text("confirm_print")).clicked() {
                             self.confirm_print = false;
-                            if let Some(document) = &self.document {
-                                let choices = self
-                                    .printer_details
-                                    .as_ref()
-                                    .map(|details| details.choices.as_slice())
-                                    .unwrap_or(&[]);
-                                self.status = Some(
-                                    match cups::submit(
-                                        &self.selected_printer,
-                                        &document.path,
-                                        self.copies,
-                                        choices,
-                                        &self.selected_options,
-                                    ) {
-                                        Ok(message) => format!("CUPS: {message}"),
-                                        Err(error) => format!("CUPS: {error}"),
-                                    },
-                                );
-                            }
+                            self.status = Some(match self.submit_current_document() {
+                                Ok(message) => format!("CUPS: {message}"),
+                                Err(error) => format!("CUPS: {error}"),
+                            });
                         }
                     });
                 });
