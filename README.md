@@ -37,3 +37,11 @@ Incoming print jobs can contain sensitive information. A future service must iso
 ## Contributing
 
 Contributions and translations are welcome once contribution guidelines and licensing have been finalized.
+
+## PDF preview (0.2.1 experimental)
+
+The desktop app now supports opening PDFs using a native file picker or drag-and-drop, inspecting page counts and displaying rendered page previews.
+
+**Linux runtime requirement:** install Poppler's `pdftoppm` command (for example `sudo apt install poppler-utils` on Debian/Ubuntu). The preview invokes this executable and displays its PNG output. This is an interim implementation, not a bundled PDF renderer.
+
+Printing, PDF layout transformations, and CUPS virtual printer integration are **not implemented**. Selecting a layout currently changes only the selection control. Preview rendering runs synchronously and may temporarily block the interface for large PDFs; a background worker and input resource limits are planned before production use.
