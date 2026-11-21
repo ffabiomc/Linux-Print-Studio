@@ -13,9 +13,12 @@ pub fn n_up(pages: usize, per_sheet: usize) -> Result<Vec<SheetSide>, &'static s
         .collect::<Vec<_>>()
         .chunks(per_sheet)
         .map(|chunk| SheetSide {
-            slots: chunk.iter().copied().map(Some).chain(
-                std::iter::repeat(None).take(per_sheet - chunk.len()),
-            ).collect(),
+            slots: chunk
+                .iter()
+                .copied()
+                .map(Some)
+                .chain(std::iter::repeat(None).take(per_sheet - chunk.len()))
+                .collect(),
         })
         .collect())
 }
