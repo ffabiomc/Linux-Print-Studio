@@ -216,6 +216,20 @@ impl PrintStudioApp {
         {
             return Err("Front pass is pending, cancelled, or not confirmed".to_owned());
         }
+        if back {
+            let job_id = session
+                .front_job_id
+                .as_ref()
+                .ok_or("Cannot verify the front CUPS job identifier")?;
+            if cups::jobs(&session.printer)?
+                .iter()
+                .any(|job| &job.id == job_id)
+            {
+                session.front_queue_status = Some(true);
+                session.paper_reinserted = false;
+                return Err("Front pass is still in the CUPS queue".to_owned());
+            }
+        }
         let pdf = if back {
             &session.backs
         } else {
