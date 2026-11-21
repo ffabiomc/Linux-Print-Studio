@@ -1,5 +1,5 @@
 use crate::calibration;
-use crate::cups::{self, PrinterDetails, Printers};
+use crate::cups::{self, PrintJob, PrinterDetails, Printers};
 use crate::document::PdfDocument;
 use crate::duplex::{self, FeedOrder};
 use crate::duplex_export;
@@ -36,6 +36,8 @@ pub struct PrintStudioApp {
     printer_details: Option<PrinterDetails>,
     selected_options: std::collections::BTreeMap<String, String>,
     confirm_print: bool,
+    queue_jobs: Vec<PrintJob>,
+    cancel_target: Option<String>,
     status: Option<String>,
     preview: Option<egui::TextureHandle>,
     preview_page: usize,
@@ -63,6 +65,8 @@ impl Default for PrintStudioApp {
             printer_details: None,
             selected_options: std::collections::BTreeMap::new(),
             confirm_print: false,
+            queue_jobs: Vec::new(),
+            cancel_target: None,
             status: None,
             preview: None,
             preview_page: 0,
@@ -409,6 +413,7 @@ impl eframe::App for PrintStudioApp {
                 ui.heading(self.language.text("printer"));
                 if ui.button(self.language.text("refresh_printers")).clicked() {
                     self.printer_details = None;
+                    self.queue_jobs.clear();
                     self.selected_options.clear();
                     match cups::discover() {
                         Ok(printers) => {
@@ -442,6 +447,7 @@ impl eframe::App for PrintStudioApp {
                                         .changed()
                                     {
                                         self.printer_details = None;
+                                        self.queue_jobs.clear();
                                         self.selected_options.clear();
                                     }
                                 }
@@ -507,6 +513,27 @@ impl eframe::App for PrintStudioApp {
                             });
                     });
                 }
+                ui.separator();
+                ui.heading(self.language.text("print_queue"));
+                if !self.selected_printer.is_empty()
+                    && ui.button(self.language.text("refresh_queue")).clicked()
+                {
+                    match cups::jobs(&self.selected_printer) {
+                        Ok(jobs) => {
+                            self.queue_jobs = jobs;
+                            self.cups_error = None;
+                        }
+                        Err(error) => self.cups_error = Some(error),
+                    }
+                }
+                for job in &self.queue_jobs {
+                    ui.horizontal(|ui| {
+                        ui.label(&job.description);
+                        if ui.button(self.language.text("cancel_job")).clicked() {
+                            self.cancel_target = Some(job.id.clone());
+                        }
+                    });
+                }
                 ui.label(self.language.text("not_ready"));
                 let can_print = self.document.is_some()
                     && !self.selected_printer.is_empty()
@@ -518,6 +545,30 @@ impl eframe::App for PrintStudioApp {
                     self.confirm_print = true;
                 }
             });
+
+        if let Some(job_id) = self.cancel_target.clone() {
+            egui::Window::new(self.language.text("confirm_cancel_job"))
+                .collapsible(false)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    ui.label(&job_id);
+                    ui.horizontal(|ui| {
+                        if ui.button(self.language.text("cancel")).clicked() {
+                            self.cancel_target = None;
+                        }
+                        if ui.button(self.language.text("confirm_cancel_job")).clicked() {
+                            self.cancel_target = None;
+                            self.status = Some(match cups::cancel_job(&self.selected_printer, &job_id) {
+                                Ok(()) => {
+                                    self.queue_jobs.retain(|job| job.id != job_id);
+                                    self.language.text("job_cancelled").to_owned()
+                                }
+                                Err(error) => error,
+                            });
+                        }
+                    });
+                });
+        }
 
         if self.confirm_print {
             egui::Window::new(self.language.text("confirm_print"))
