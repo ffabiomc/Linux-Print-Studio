@@ -75,6 +75,8 @@ impl Language {
             (false, "cancel") => "Cancel",
             (true, "duplex_refresh_front") => "Consultar fila das frentes",
             (false, "duplex_refresh_front") => "Refresh front job queue",
+            (true, "duplex_active_document") => "Finalize ou cancele a impressão frente e verso antes de abrir outro PDF.",
+            (false, "duplex_active_document") => "Finish or cancel the manual duplex session before opening another PDF.",
             (true, "duplex_front_cancelled") => "Frentes canceladas. Encerre esta sessão e prepare uma nova impressão.",
             (false, "duplex_front_cancelled") => "Front pass cancelled. Close this session and prepare a new print job.",
             (true, "duplex_front_in_queue") => "O trabalho das frentes ainda aparece na fila do CUPS.",
