@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   package:
@@ -88,3 +88,19 @@ jobs:
             Linux-Print-Studio-x86_64.AppImage
             SHA256SUMS
           if-no-files-found: error
+      - name: Publish pre-release for version tags
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            linux-print-studio_*_amd64.deb \
+            linux-print-studio-*.x86_64.rpm \
+            Linux-Print-Studio-x86_64.AppImage \
+            SHA256SUMS \
+            --title "Linux Print Studio $GITHUB_REF_NAME" \
+            --notes "Experimental Linux builds for Debian/Ubuntu, RPM distributions, and AppImage. Physical printer compatibility is not yet validated." \
+            --prerelease \
+            --verify-tag
