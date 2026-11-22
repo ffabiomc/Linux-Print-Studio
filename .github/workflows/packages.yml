@@ -3,6 +3,11 @@ name: Linux packages
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing pre-release tag to attach packages to (optional)'
+        required: false
+        type: string
   push:
     tags:
       - 'v*'
@@ -171,6 +176,21 @@ jobs:
             SHA256SUMS
           if-no-files-found: error
 
+      - name: Upload packages to an existing pre-release (manual run)
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$RELEASE_TAG" --json isPrerelease --jq '.isPrerelease' | grep -qx true
+          gh release upload "$RELEASE_TAG" \
+            linux-print-studio_*_amd64.deb \
+            linux-print-studio-*.x86_64.rpm \
+            Linux-Print-Studio-x86_64.AppImage \
+            SHA256SUMS \
+            --clobber
       - name: Publish pre-release for version tags
         if: startsWith(github.ref, 'refs/tags/v')
         env:
