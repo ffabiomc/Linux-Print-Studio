@@ -11,6 +11,9 @@ pub enum Language {
     Bengali,
     Russian,
     Urdu,
+    Italian,
+    Japanese,
+    Greek,
 }
 
 pub fn system_language() -> Language {
@@ -35,6 +38,9 @@ pub fn system_language() -> Language {
             } else if code == "bn" || code.starts_with("bn-") { Language::Bengali
             } else if code == "ru" || code.starts_with("ru-") { Language::Russian
             } else if code == "ur" || code.starts_with("ur-") { Language::Urdu
+            } else if code == "it" || code.starts_with("it-") { Language::Italian
+            } else if code == "ja" || code.starts_with("ja-") { Language::Japanese
+            } else if code == "el" || code.starts_with("el-") { Language::Greek
             } else {
                 Language::English
             };
@@ -65,12 +71,99 @@ impl Language {
             Self::Bengali => "বাংলা",
             Self::Russian => "Русский",
             Self::Urdu => "اردو",
+            Self::Italian => "Italiano",
+            Self::Japanese => "日本語",
+            Self::Greek => "Ελληνικά",
         }
     }
 
     pub fn text(self, key: &str) -> &'static str {
         let language = self.resolved();
         match (language, key) {
+            (Self::Italian, "subtitle") => "Gestore di stampa per Linux",
+            (Self::Italian, "language") => "Lingua",
+            (Self::Italian, "document") => "Documento PDF",
+            (Self::Italian, "printer") => "Stampante",
+            (Self::Italian, "print") => "Stampa",
+            (Self::Italian, "cancel") => "Annulla",
+            (Self::Italian, "open") => "Apri PDF...",
+            (Self::Italian, "pages") => "Pagine",
+            (Self::Italian, "copies") => "Copie",
+            (Self::Italian, "dark") => "Tema scuro",
+            (Self::Italian, "normal") => "Normale",
+            (Self::Italian, "booklet") => "Opuscolo",
+            (Self::Italian, "poster") => "Poster",
+            (Self::Italian, "multiple") => "Più pagine",
+            (Self::Italian, "preview") => "Anteprima",
+            (Self::Italian, "layout") => "Layout",
+            (Self::Italian, "print_queue") => "Coda di stampa",
+            (Self::Italian, "refresh_printers") => "Cerca stampanti CUPS",
+            (Self::Italian, "no_printers") => "Nessuna stampante trovata.",
+            (Self::Italian, "export_pdf") => "Esporta PDF preparato",
+            (Self::Italian, "manual_duplex") => "Fronte-retro manuale",
+            (Self::Italian, "save_profile") => "Salva profilo",
+            (Self::Italian, "previous_page") => "Pagina precedente",
+            (Self::Italian, "next_page") => "Pagina successiva",
+            (Self::Italian, "refresh_queue") => "Aggiorna coda",
+            (Self::Italian, "cancel_job") => "Annulla lavoro",
+            (Self::Italian, "confirm_print") => "Conferma stampa",
+            (Self::Italian, "default_printer") => "Stampante predefinita del sistema",
+            (Self::Japanese, "subtitle") => "Linux 印刷マネージャー",
+            (Self::Japanese, "language") => "言語",
+            (Self::Japanese, "document") => "PDF 文書",
+            (Self::Japanese, "printer") => "プリンター",
+            (Self::Japanese, "print") => "印刷",
+            (Self::Japanese, "cancel") => "キャンセル",
+            (Self::Japanese, "open") => "PDF を開く...",
+            (Self::Japanese, "pages") => "ページ",
+            (Self::Japanese, "copies") => "部数",
+            (Self::Japanese, "dark") => "ダークテーマ",
+            (Self::Japanese, "normal") => "通常",
+            (Self::Japanese, "booklet") => "小冊子",
+            (Self::Japanese, "poster") => "ポスター",
+            (Self::Japanese, "multiple") => "複数ページ",
+            (Self::Japanese, "preview") => "プレビュー",
+            (Self::Japanese, "layout") => "レイアウト",
+            (Self::Japanese, "print_queue") => "印刷キュー",
+            (Self::Japanese, "refresh_printers") => "CUPS プリンターを検索",
+            (Self::Japanese, "no_printers") => "プリンターが見つかりません。",
+            (Self::Japanese, "export_pdf") => "処理済み PDF を書き出す",
+            (Self::Japanese, "manual_duplex") => "手動両面印刷",
+            (Self::Japanese, "save_profile") => "プロファイルを保存",
+            (Self::Japanese, "previous_page") => "前のページ",
+            (Self::Japanese, "next_page") => "次のページ",
+            (Self::Japanese, "refresh_queue") => "キューを更新",
+            (Self::Japanese, "cancel_job") => "ジョブをキャンセル",
+            (Self::Japanese, "confirm_print") => "印刷を確認",
+            (Self::Japanese, "default_printer") => "システムの既定のプリンター",
+            (Self::Greek, "subtitle") => "Διαχείριση εκτυπώσεων για Linux",
+            (Self::Greek, "language") => "Γλώσσα",
+            (Self::Greek, "document") => "Έγγραφο PDF",
+            (Self::Greek, "printer") => "Εκτυπωτής",
+            (Self::Greek, "print") => "Εκτύπωση",
+            (Self::Greek, "cancel") => "Ακύρωση",
+            (Self::Greek, "open") => "Άνοιγμα PDF...",
+            (Self::Greek, "pages") => "Σελίδες",
+            (Self::Greek, "copies") => "Αντίγραφα",
+            (Self::Greek, "dark") => "Σκούρο θέμα",
+            (Self::Greek, "normal") => "Κανονικό",
+            (Self::Greek, "booklet") => "Φυλλάδιο",
+            (Self::Greek, "poster") => "Αφίσα",
+            (Self::Greek, "multiple") => "Πολλαπλές σελίδες",
+            (Self::Greek, "preview") => "Προεπισκόπηση",
+            (Self::Greek, "layout") => "Διάταξη",
+            (Self::Greek, "print_queue") => "Ουρά εκτύπωσης",
+            (Self::Greek, "refresh_printers") => "Αναζήτηση εκτυπωτών CUPS",
+            (Self::Greek, "no_printers") => "Δεν βρέθηκαν εκτυπωτές.",
+            (Self::Greek, "export_pdf") => "Εξαγωγή έτοιμου PDF",
+            (Self::Greek, "manual_duplex") => "Χειροκίνητη εκτύπωση διπλής όψης",
+            (Self::Greek, "save_profile") => "Αποθήκευση προφίλ",
+            (Self::Greek, "previous_page") => "Προηγούμενη σελίδα",
+            (Self::Greek, "next_page") => "Επόμενη σελίδα",
+            (Self::Greek, "refresh_queue") => "Ανανέωση ουράς",
+            (Self::Greek, "cancel_job") => "Ακύρωση εργασίας",
+            (Self::Greek, "confirm_print") => "Επιβεβαίωση εκτύπωσης",
+            (Self::Greek, "default_printer") => "Προεπιλεγμένος εκτυπωτής συστήματος",
             (Self::Spanish, "subtitle") => "Administrador de impresión para Linux",
             (Self::Spanish, "language") => "Idioma",
             (Self::Spanish, "document") => "Documento PDF",
@@ -478,6 +571,10 @@ mod tests {
     use super::*;
     #[test]
     fn explicit_languages_resolve() {
+        for language in [Language::Italian, Language::Japanese, Language::Greek] {
+            assert_eq!(language.resolved(), language);
+            assert_ne!(language.text("language"), "Unknown translation");
+        }
         assert_eq!(Language::English.resolved(), Language::English);
         assert_eq!(
             Language::PortugueseBrazil.resolved(),
