@@ -18,6 +18,7 @@ URL: https://github.com/ffabiomc/Linux-Print-Studio
 BuildArch: x86_64
 Requires: cups-client
 Requires: poppler-utils
+Requires: fontconfig
 
 %description
 Desktop print utility with booklet, poster, N-up and manual duplex workflows.
