@@ -5,6 +5,7 @@ mod document;
 mod duplex;
 mod duplex_export;
 mod export;
+mod fonts;
 mod i18n;
 mod imposition;
 mod preview;
@@ -15,6 +16,9 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Linux Print Studio",
         options,
-        Box::new(|_cc| Ok(Box::new(app::PrintStudioApp::default()))),
+        Box::new(|cc| {
+            fonts::install(&cc.egui_ctx);
+            Ok(Box::new(app::PrintStudioApp::default()))
+        }),
     )
 }
