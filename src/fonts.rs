@@ -46,7 +46,10 @@ pub fn install(ctx: &egui::Context) {
             continue;
         };
         // Avoid registering unsupported font formats; egui parses OpenType/TrueType.
-        if !matches!(path.extension().and_then(|ext| ext.to_str()), Some("ttf" | "otf")) {
+        if !matches!(
+            path.extension().and_then(|ext| ext.to_str()),
+            Some("ttf" | "otf")
+        ) {
             continue;
         }
         let name = format!("system-{language}");
