@@ -30,17 +30,28 @@ pub fn system_language() -> Language {
                 .to_lowercase();
             return if code == "pt" || code.starts_with("pt-") {
                 Language::PortugueseBrazil
-            } else if code == "es" || code.starts_with("es-") { Language::Spanish
-            } else if code == "zh" || code.starts_with("zh-") { Language::ChineseSimplified
-            } else if code == "hi" || code.starts_with("hi-") { Language::Hindi
-            } else if code == "ar" || code.starts_with("ar-") { Language::Arabic
-            } else if code == "fr" || code.starts_with("fr-") { Language::French
-            } else if code == "bn" || code.starts_with("bn-") { Language::Bengali
-            } else if code == "ru" || code.starts_with("ru-") { Language::Russian
-            } else if code == "ur" || code.starts_with("ur-") { Language::Urdu
-            } else if code == "it" || code.starts_with("it-") { Language::Italian
-            } else if code == "ja" || code.starts_with("ja-") { Language::Japanese
-            } else if code == "el" || code.starts_with("el-") { Language::Greek
+            } else if code == "es" || code.starts_with("es-") {
+                Language::Spanish
+            } else if code == "zh" || code.starts_with("zh-") {
+                Language::ChineseSimplified
+            } else if code == "hi" || code.starts_with("hi-") {
+                Language::Hindi
+            } else if code == "ar" || code.starts_with("ar-") {
+                Language::Arabic
+            } else if code == "fr" || code.starts_with("fr-") {
+                Language::French
+            } else if code == "bn" || code.starts_with("bn-") {
+                Language::Bengali
+            } else if code == "ru" || code.starts_with("ru-") {
+                Language::Russian
+            } else if code == "ur" || code.starts_with("ur-") {
+                Language::Urdu
+            } else if code == "it" || code.starts_with("it-") {
+                Language::Italian
+            } else if code == "ja" || code.starts_with("ja-") {
+                Language::Japanese
+            } else if code == "el" || code.starts_with("el-") {
+                Language::Greek
             } else {
                 Language::English
             };
