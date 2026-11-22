@@ -355,6 +355,9 @@ impl eframe::App for PrintStudioApp {
                             Language::Bengali,
                             Language::Russian,
                             Language::Urdu,
+                            Language::Italian,
+                            Language::Japanese,
+                            Language::Greek,
                         ] {
                             ui.selectable_value(&mut self.language, language, language.label());
                         }
