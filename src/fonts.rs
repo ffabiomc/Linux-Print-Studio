@@ -50,10 +50,9 @@ pub fn install(ctx: &egui::Context) {
             continue;
         }
         let name = format!("system-{language}");
-        definitions.font_data.insert(
-            name.clone(),
-            FontData::from_owned(bytes).into(),
-        );
+        definitions
+            .font_data
+            .insert(name.clone(), FontData::from_owned(bytes).into());
         fallback_names.push((name, sample.to_string()));
     }
 
@@ -72,7 +71,10 @@ pub fn install(ctx: &egui::Context) {
 mod tests {
     #[test]
     fn language_samples_cover_non_latin_scripts() {
-        let languages: Vec<_> = super::LANGUAGE_SAMPLES.iter().map(|(lang, _)| *lang).collect();
+        let languages: Vec<_> = super::LANGUAGE_SAMPLES
+            .iter()
+            .map(|(lang, _)| *lang)
+            .collect();
         for required in ["zh-cn", "ja", "hi", "bn", "ar", "ur", "el", "ru"] {
             assert!(languages.contains(&required));
         }
