@@ -1,3 +1,4 @@
+
 name: Linux packages
 
 on:
@@ -12,29 +13,70 @@ permissions:
 jobs:
   package:
     runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: dtolnay/rust-toolchain@stable
+
       - uses: Swatinem/rust-cache@v2
+
       - name: Install native build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libxkbcommon-dev libwayland-dev libasound2-dev libudev-dev libdbus-1-dev libssl-dev libfontconfig1-dev libfreetype6-dev pkg-config libfuse2 file desktop-file-utils rpm cpio
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libasound2-dev \
+            libudev-dev \
+            libdbus-1-dev \
+            libssl-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            pkg-config \
+            libfuse2 \
+            file \
+            desktop-file-utils \
+            rpm \
+            cpio
+
       - name: Build release executable
         run: cargo build --release
+
       - name: Validate desktop entry
-        run: desktop-file-validate packaging/linux-print-studio.desktop
+        run: |
+          desktop-file-validate \
+            packaging/linux-print-studio.desktop
+
       - name: Prepare Debian package
         shell: bash
         run: |
           set -euo pipefail
+
           version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n1)"
           stage="$RUNNER_TEMP/debroot"
-          mkdir -p "$stage/DEBIAN" "$stage/usr/bin" "$stage/usr/share/applications"
-          install -m755 target/release/linux-print-studio "$stage/usr/bin/linux-print-studio"
-          install -m644 packaging/linux-print-studio.desktop "$stage/usr/share/applications/linux-print-studio.desktop"
-          mkdir -p "$stage/usr/share/icons/hicolor/scalable/apps"
-          install -m644 packaging/linux-print-studio.svg "$stage/usr/share/icons/hicolor/scalable/apps/linux-print-studio.svg"
+
+          mkdir -p \
+            "$stage/DEBIAN" \
+            "$stage/usr/bin" \
+            "$stage/usr/share/applications"
+
+          install -m755 \
+            target/release/linux-print-studio \
+            "$stage/usr/bin/linux-print-studio"
+
+          install -m644 \
+            packaging/linux-print-studio.desktop \
+            "$stage/usr/share/applications/linux-print-studio.desktop"
+
+          mkdir -p \
+            "$stage/usr/share/icons/hicolor/scalable/apps"
+
+          install -m644 \
+            packaging/linux-print-studio.svg \
+            "$stage/usr/share/icons/hicolor/scalable/apps/linux-print-studio.svg"
+
           cat > "$stage/DEBIAN/control" <<EOF
           Package: linux-print-studio
           Version: $version
@@ -46,38 +88,78 @@ jobs:
           Description: Linux desktop PDF print preparation and CUPS printing
            Desktop print utility with booklet, poster, N-up and manual duplex workflows.
           EOF
-          dpkg-deb --build --root-owner-group "$stage" "linux-print-studio_${version}_amd64.deb"
-          dpkg-deb --info "linux-print-studio_${version}_amd64.deb"
+
+          dpkg-deb --build --root-owner-group \
+            "$stage" \
+            "linux-print-studio_${version}_amd64.deb"
+
+          dpkg-deb --info \
+            "linux-print-studio_${version}_amd64.deb"
+
       - name: Prepare AppImage staging directory
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p AppDir/usr/bin AppDir/usr/share/applications
-          install -m755 target/release/linux-print-studio AppDir/usr/bin/linux-print-studio
-          install -m644 packaging/linux-print-studio.desktop AppDir/usr/share/applications/linux-print-studio.desktop
-          install -m644 packaging/linux-print-studio.desktop AppDir/linux-print-studio.desktop
-          cp packaging/linux-print-studio.svg AppDir/linux-print-studio.svg
-          mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
-          cp packaging/linux-print-studio.svg AppDir/usr/share/icons/hicolor/scalable/apps/linux-print-studio.svg
+
+          mkdir -p \
+            AppDir/usr/bin \
+            AppDir/usr/share/applications
+
+          install -m755 \
+            target/release/linux-print-studio \
+            AppDir/usr/bin/linux-print-studio
+
+          install -m644 \
+            packaging/linux-print-studio.desktop \
+            AppDir/usr/share/applications/linux-print-studio.desktop
+
+          install -m644 \
+            packaging/linux-print-studio.desktop \
+            AppDir/linux-print-studio.desktop
+
+          cp packaging/linux-print-studio.svg \
+            AppDir/linux-print-studio.svg
+
+          mkdir -p \
+            AppDir/usr/share/icons/hicolor/scalable/apps
+
+          cp packaging/linux-print-studio.svg \
+            AppDir/usr/share/icons/hicolor/scalable/apps/linux-print-studio.svg
+
           cat > AppDir/AppRun <<'EOF'
           #!/bin/sh
           HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
           exec "$HERE/usr/bin/linux-print-studio" "$@"
           EOF
+
           chmod +x AppDir/AppRun
+
       - name: Build AppImage
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --output appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+
+          curl --fail --location --retry 3 \
+            --output appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+
           chmod +x appimagetool
-          ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir Linux-Print-Studio-x86_64.AppImage
+
+          ARCH=x86_64 \
+            ./appimagetool --appimage-extract-and-run \
+            AppDir \
+            Linux-Print-Studio-x86_64.AppImage
+
       - name: Build RPM package
         shell: bash
-        run: bash packaging/build-rpm.sh
+        run: |
+          bash packaging/build-rpm.sh
+
       - name: Verify package structure and checksums
         shell: bash
-        run: bash packaging/verify-packages.sh
+        run: |
+          bash packaging/verify-packages.sh
+
       - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
@@ -88,6 +170,7 @@ jobs:
             Linux-Print-Studio-x86_64.AppImage
             SHA256SUMS
           if-no-files-found: error
+
       - name: Publish pre-release for version tags
         if: startsWith(github.ref, 'refs/tags/v')
         env:
@@ -95,12 +178,54 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh release create "$GITHUB_REF_NAME" \
-            linux-print-studio_*_amd64.deb \
-            linux-print-studio-*.x86_64.rpm \
-            Linux-Print-Studio-x86_64.AppImage \
-            SHA256SUMS \
-            --title "Linux Print Studio $GITHUB_REF_NAME" \
-            --notes "Experimental Linux builds for Debian/Ubuntu, RPM distributions, and AppImage. Physical printer compatibility is not yet validated." \
-            --prerelease \
-            --verify-tag
+
+          shopt -s nullglob
+
+          files=(
+            linux-print-studio_*_amd64.deb
+            linux-print-studio-*.x86_64.rpm
+            Linux-Print-Studio-x86_64.AppImage
+            SHA256SUMS
+          )
+
+          if [ "${#files[@]}" -ne 4 ]; then
+            echo "::error::Esperados 4 arquivos de distribuição."
+            printf '%s\n' "${files[@]}"
+            exit 1
+          fi
+
+          echo "Verificando Release $GITHUB_REF_NAME"
+
+          if gh release view "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+
+            echo "Release existente."
+            echo "Atualizando arquivos..."
+
+            gh release upload "$GITHUB_REF_NAME" \
+              "${files[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+
+          else
+
+            echo "Criando nova Release..."
+
+            gh release create "$GITHUB_REF_NAME" \
+              "${files[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Linux Print Studio $GITHUB_REF_NAME" \
+              --notes "Experimental Linux builds for Debian/Ubuntu, RPM distributions, and AppImage. Physical printer compatibility is not yet validated." \
+              --prerelease \
+              --verify-tag
+
+          fi
+
+          echo "Verificando arquivos publicados..."
+
+          gh release view "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json assets \
+            --jq '.assets[].name'
+
+          echo "Publicação concluída."
