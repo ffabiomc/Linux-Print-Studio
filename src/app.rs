@@ -319,11 +319,7 @@ impl PrintStudioApp {
 
 impl eframe::App for PrintStudioApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.set_visuals(if self.dark_mode {
-            egui::Visuals::dark()
-        } else {
-            egui::Visuals::light()
-        });
+        ctx.set_visuals(crate::theme::visuals(self.dark_mode));
 
         let dropped = ctx.input(|input| input.raw.dropped_files.clone());
         for file in dropped {
@@ -375,8 +371,8 @@ impl eframe::App for PrintStudioApp {
         );
         egui::SidePanel::left("settings")
             .resizable(true)
-            .default_width(310.0)
-            .width_range(245.0..=520.0)
+            .default_width(350.0)
+            .width_range(290.0..=560.0)
             .show(ctx, |ui| {
                 ui.heading(self.language.text("document"));
                 if ui.button(self.language.text("open")).clicked() {
