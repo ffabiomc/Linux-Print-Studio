@@ -35,6 +35,26 @@ pub fn install(ctx: &egui::Context) {
     let mut seen = HashSet::new();
     let mut fallback_names = Vec::new();
 
+    // Use the desktop's preferred sans-serif font for Latin UI text.
+    // Retain egui's built-in font as a fallback.
+    if let Some(path) = fontconfig_file("pt") {
+        if matches!(
+            path.extension().and_then(|ext| ext.to_str()),
+            Some("ttf" | "otf")
+        ) {
+            if let Ok(bytes) = std::fs::read(&path) {
+                definitions
+                    .font_data
+                    .insert("desktop-sans".to_owned(), FontData::from_owned(bytes).into());
+                if let Some(fonts) = definitions.families.get_mut(&FontFamily::Proportional) {
+                    fonts.insert(0, "desktop-sans".to_owned());
+                }
+                seen.insert(path);
+            }
+        }
+    }
+
+
     for (language, sample) in LANGUAGE_SAMPLES {
         let Some(path) = fontconfig_file(language) else {
             continue;
