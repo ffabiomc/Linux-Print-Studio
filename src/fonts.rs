@@ -43,9 +43,10 @@ pub fn install(ctx: &egui::Context) {
             Some("ttf" | "otf")
         ) {
             if let Ok(bytes) = std::fs::read(&path) {
-                definitions
-                    .font_data
-                    .insert("desktop-sans".to_owned(), FontData::from_owned(bytes).into());
+                definitions.font_data.insert(
+                    "desktop-sans".to_owned(),
+                    FontData::from_owned(bytes).into(),
+                );
                 if let Some(fonts) = definitions.families.get_mut(&FontFamily::Proportional) {
                     fonts.insert(0, "desktop-sans".to_owned());
                 }
@@ -53,7 +54,6 @@ pub fn install(ctx: &egui::Context) {
             }
         }
     }
-
 
     for (language, sample) in LANGUAGE_SAMPLES {
         let Some(path) = fontconfig_file(language) else {
